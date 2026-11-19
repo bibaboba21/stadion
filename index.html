@@ -1,1422 +1,1067 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ФутболБилеты Pro</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0f;
-            color: #fff;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        :root {
-            --primary: #6c5ce7;
-            --primary-light: #a29bfe;
-            --accent: #00b894;
-            --accent-glow: rgba(0, 184, 148, 0.4);
-            --danger: #e74c3c;
-            --bg-dark: #0a0a0f;
-            --bg-card: #1a1a2e;
-            --bg-card-hover: #16213e;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0b0;
-            --gradient-1: linear-gradient(135deg, #6c5ce7, #a29bfe);
-            --gradient-2: linear-gradient(135deg, #00b894, #00cec9);
-            --gradient-3: linear-gradient(135deg, #fd79a8, #e84393);
-        }
-
-        /* Header */
-        .header {
-            background: rgba(26, 26, 46, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid rgba(108, 92, 231, 0.2);
-        }
-
-        .header-title {
-            font-size: 20px;
-            font-weight: 700;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .back-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(108, 92, 231, 0.2);
-            border: none;
-            color: var(--primary-light);
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .back-btn:active {
-            transform: scale(0.9);
-        }
-
-        /* Screens */
-        .screen {
-            display: none;
-            padding: 16px;
-            padding-bottom: 100px;
-            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .screen.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { 
-                opacity: 0; 
-                transform: translateY(20px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            }
-        }
-
-        @keyframes slideInRight {
-            from { 
-                opacity: 0; 
-                transform: translateX(50px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateX(0); 
-            }
-        }
-
-        @keyframes scaleIn {
-            from { 
-                opacity: 0; 
-                transform: scale(0.8); 
-            }
-            to { 
-                opacity: 1; 
-                transform: scale(1); 
-            }
-        }
-
-        /* Stadium Selection */
-        .stadium-selector {
-            margin-bottom: 20px;
-        }
-
-        .stadium-cards {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding: 8px 0;
-            scrollbar-width: none;
-        }
-
-        .stadium-cards::-webkit-scrollbar {
-            display: none;
-        }
-
-        .stadium-card {
-            min-width: 200px;
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 16px;
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stadium-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--gradient-1);
-            transform: scaleX(0);
-            transition: transform 0.3s;
-        }
-
-        .stadium-card.active {
-            border-color: var(--primary);
-            background: var(--bg-card-hover);
-        }
-
-        .stadium-card.active::before {
-            transform: scaleX(1);
-        }
-
-        .stadium-card-name {
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .stadium-card-city {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        .stadium-card-capacity {
-            font-size: 10px;
-            color: var(--primary-light);
-            margin-top: 8px;
-        }
-
-        /* Stadium Map Container */
-        .stadium-map-wrapper {
-            position: relative;
-            background: var(--bg-card);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 16px;
-            overflow: hidden;
-        }
-
-        .stadium-map-container {
-            width: 100%;
-            height: 500px;
-            position: relative;
-            overflow: hidden;
-            cursor: grab;
-            border-radius: 12px;
-            background: radial-gradient(ellipse at center, #1a2332 0%, #0a0a0f 100%);
-        }
-
-        .stadium-map-container:active {
-            cursor: grabbing;
-        }
-
-        .stadium-svg {
-            width: 100%;
-            height: 100%;
-            transition: transform 0.3s;
-        }
-
-        /* Map Controls */
-        .map-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 10;
-        }
-
-        .map-control-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: rgba(26, 26, 46, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(108, 92, 231, 0.3);
-            color: var(--primary-light);
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .map-control-btn:active {
-            transform: scale(0.9);
-            background: rgba(108, 92, 231, 0.3);
-        }
-
-        /* Section Info Panel */
-        .section-info {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(26, 26, 46, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            padding: 16px;
-            border: 1px solid rgba(108, 92, 231, 0.3);
-            display: none;
-            animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .section-info.visible {
-            display: block;
-        }
-
-        .section-info-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .section-info-title {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .section-info-price {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .section-info-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .section-stat {
-            background: rgba(255,255,255,0.05);
-            padding: 8px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .section-stat-label {
-            font-size: 9px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-bottom: 2px;
-        }
-
-        .section-stat-value {
-            font-size: 14px;
-            font-weight: 700;
-        }
-
-        .section-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .section-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 10px;
-            border: none;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .section-btn-primary {
-            background: var(--gradient-1);
-            color: white;
-        }
-
-        .section-btn-secondary {
-            background: rgba(108, 92, 231, 0.1);
-            color: var(--primary-light);
-            border: 1px solid rgba(108, 92, 231, 0.3);
-        }
-
-        .section-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* Seat Selection Grid */
-        .seat-selection-container {
-            background: var(--bg-card);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 16px;
-            animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .seat-grid-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .seat-grid-title {
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .seat-legend {
-            display: flex;
-            gap: 12px;
-            font-size: 11px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .legend-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 3px;
-        }
-
-        .legend-dot.available {
-            background: rgba(108, 92, 231, 0.6);
-            border: 1px solid var(--primary-light);
-        }
-
-        .legend-dot.selected {
-            background: var(--accent);
-            border: 2px solid #00b894;
-        }
-
-        .legend-dot.sold {
-            background: rgba(100, 100, 100, 0.3);
-        }
-
-        .seat-screen {
-            background: #0a0a0f;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .seat-screen::before {
-            content: 'ПОЛЕ';
-            position: absolute;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: var(--text-secondary);
-            letter-spacing: 2px;
-        }
-
-        .seat-rows {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .seat-row {
-            display: flex;
-            gap: 6px;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .seat-row-label {
-            width: 24px;
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-align: center;
-        }
-
-        .seat {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .seat.available {
-            background: rgba(108, 92, 231, 0.3);
-            border: 1px solid rgba(108, 92, 231, 0.6);
-            color: var(--primary-light);
-        }
-
-        .seat.available:hover {
-            background: rgba(108, 92, 231, 0.5);
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(108, 92, 231, 0.4);
-        }
-
-        .seat.selected {
-            background: var(--accent);
-            border: 2px solid #00b894;
-            color: #000;
-            box-shadow: 0 0 20px var(--accent-glow);
-            animation: pulse 1.5s infinite;
-        }
-
-        .seat.sold {
-            background: rgba(100, 100, 100, 0.15);
-            cursor: not-allowed;
-            opacity: 0.4;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                box-shadow: 0 0 20px var(--accent-glow);
-            }
-            50% {
-                box-shadow: 0 0 30px var(--accent-glow), 0 0 40px rgba(0, 184, 148, 0.2);
-            }
-        }
-
-        /* 3D Preview */
-        .preview-3d-container {
-            background: var(--bg-card);
-            border-radius: 20px;
-            overflow: hidden;
-            margin-bottom: 16px;
-            animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .preview-3d-viewport {
-            width: 100%;
-            height: 300px;
-            background: linear-gradient(180deg, #0a0a0f 0%, #1a2332 30%, #2d4a3e 50%, #1a5c32 70%, #0d2818 100%);
-            position: relative;
-            overflow: hidden;
-            perspective: 1000px;
-        }
-
-        .preview-field {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%) rotateX(60deg) translateZ(-100px);
-            width: 120%;
-            height: 200%;
-            background: repeating-linear-gradient(
-                90deg,
-                #2d8a4e 0px,
-                #2d8a4e 40px,
-                #1a5c32 40px,
-                #1a5c32 80px
-            );
-            border: 3px solid rgba(255,255,255,0.3);
-            transform-origin: bottom center;
-        }
-
-        .preview-field-lines {
-            position: absolute;
-            bottom: 20%;
-            left: 15%;
-            right: 15%;
-            height: 40%;
-            border: 2px solid rgba(255,255,255,0.4);
-            transform: perspective(500px) rotateX(45deg);
-        }
-
-        .preview-field-center {
-            position: absolute;
-            bottom: 30%;
-            left: 50%;
-            transform: translateX(-50%) perspective(500px) rotateX(45deg);
-            width: 60px;
-            height: 60px;
-            border: 2px solid rgba(255,255,255,0.4);
-            border-radius: 50%;
-        }
-
-        .preview-crowd {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 35%;
-            background: linear-gradient(180deg, 
-                rgba(108, 92, 231, 0.2) 0%, 
-                rgba(108, 92, 231, 0.1) 50%, 
-                transparent 100%
-            );
-            animation: crowdWave 3s ease-in-out infinite;
-        }
-
-        @keyframes crowdWave {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 0.9; }
-        }
-
-        .preview-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(ellipse at center bottom, transparent 30%, rgba(0,0,0,0.4) 100%);
-        }
-
-        .preview-stats {
-            position: absolute;
-            bottom: 16px;
-            left: 16px;
-            right: 16px;
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .preview-stat-card {
-            flex: 1;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(10px);
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid rgba(108, 92, 231, 0.3);
-        }
-
-        .preview-stat-label {
-            font-size: 9px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-
-        .preview-stat-value {
-            font-size: 14px;
-            font-weight: 700;
-            color: white;
-        }
-
-        .preview-controls {
-            padding: 16px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .preview-control-btn {
-            flex: 1;
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(108, 92, 231, 0.3);
-            background: rgba(108, 92, 231, 0.1);
-            color: var(--primary-light);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .preview-control-btn:active {
-            background: rgba(108, 92, 231, 0.3);
-            transform: scale(0.95);
-        }
-
-        /* Seat Info Card */
-        .seat-info-card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(108, 92, 231, 0.2);
-        }
-
-        .seat-info-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .seat-info-title {
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .seat-quality-badge {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .quality-excellent {
-            background: rgba(0, 184, 148, 0.2);
-            color: var(--accent);
-        }
-
-        .quality-good {
-            background: rgba(108, 92, 231, 0.2);
-            color: var(--primary-light);
-        }
-
-        .quality-average {
-            background: rgba(253, 121, 168, 0.2);
-            color: #fd79a8;
-        }
-
-        .seat-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .seat-detail {
-            background: rgba(255,255,255,0.03);
-            padding: 12px;
-            border-radius: 10px;
-        }
-
-        .seat-detail-label {
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        .seat-detail-value {
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        /* Bottom Bar */
-        .bottom-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(26, 26, 46, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 16px 20px;
-            padding-bottom: calc(16px + env(safe-area-inset-bottom));
-            border-top: 1px solid rgba(108, 92, 231, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 100;
-            animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes slideInUp {
-            from {
-                transform: translateY(100%);
-            }
-            to {
-                transform: translateY(0);
-            }
-        }
-
-        .bottom-bar-info {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .bottom-bar-info span {
-            display: block;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .btn-primary {
-            padding: 14px 32px;
-            border-radius: 12px;
-            border: none;
-            background: var(--gradient-1);
-            color: white;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.95);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-20px);
-            background: var(--bg-card);
-            border: 1px solid var(--primary);
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 13px;
-            opacity: 0;
-            transition: all 0.3s;
-            z-index: 1000;
-            pointer-events: none;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* Loading */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(10, 10, 15, 0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .loading-overlay.show {
-            display: flex;
-        }
-
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(108, 92, 231, 0.2);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ФутболБилеты — Вид с места</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root{
+  --bg:#080b14; --bg2:#0f1424; --card:#141b30; --card2:#1a2340;
+  --line:rgba(120,140,255,.12); --pri:#5b7cfa; --pri2:#8ea2ff;
+  --acc:#2ee6a8; --gold:#ffc65c; --txt:#eef1fb; --mut:#8690ad;
+  --vip:linear-gradient(135deg,#f6c453,#e0992b);
+}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:radial-gradient(1200px 600px at 50% -10%,#16203c 0%,var(--bg) 60%);
+  color:var(--txt); overflow-x:hidden; user-select:none;
+}
+.app{max-width:520px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:96px}
+
+/* ---------- Header ---------- */
+.hdr{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;
+  padding:14px 16px;background:rgba(8,11,20,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line)}
+.hdr .ic{width:38px;height:38px;border-radius:12px;background:var(--card2);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  font-size:18px;cursor:pointer;transition:.2s;flex-shrink:0}
+.hdr .ic:active{transform:scale(.9)}
+.hdr h1{font-size:17px;font-weight:800;letter-spacing:.2px;flex:1;
+  background:linear-gradient(90deg,#fff,#a9b8ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hdr .step{font-size:11px;color:var(--mut);font-weight:600}
+
+/* ---------- Screens ---------- */
+.scr{display:none;padding:16px;animation:fade .35s cubic-bezier(.2,.7,.3,1)}
+.scr.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---------- Match cards ---------- */
+.search{position:relative;margin-bottom:14px}
+.search input{width:100%;padding:13px 16px 13px 44px;border-radius:14px;border:1px solid var(--line);
+  background:var(--card);color:var(--txt);font-size:14px;outline:none}
+.search input:focus{border-color:var(--pri)}
+.search .s{position:absolute;left:15px;top:50%;transform:translateY(-50%);opacity:.5}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:14px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{padding:8px 15px;border-radius:20px;background:var(--card);border:1px solid var(--line);
+  color:var(--mut);font-size:12.5px;font-weight:600;white-space:nowrap;cursor:pointer;transition:.2s}
+.chip.on{background:linear-gradient(135deg,var(--pri),#7b5cfa);color:#fff;border-color:transparent;
+  box-shadow:0 6px 18px rgba(91,124,250,.35)}
+.mtitle{font-size:13px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin:6px 0 12px}
+
+.mcard{background:linear-gradient(160deg,var(--card) 0%,var(--card2) 100%);border:1px solid var(--line);
+  border-radius:18px;padding:14px;margin-bottom:12px;cursor:pointer;transition:.25s;position:relative;overflow:hidden}
+.mcard:active{transform:scale(.98)}
+.mcard::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(91,124,250,.06),transparent);
+  transform:translateX(-100%);transition:.6s}
+.mcard:hover::after{transform:translateX(100%)}
+.mlg{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.mlg .lg{font-size:10.5px;font-weight:700;color:var(--pri2);text-transform:uppercase;letter-spacing:.8px}
+.mlg .dt{font-size:11px;color:var(--mut);font-weight:600}
+.teams{display:flex;align-items:center;gap:10px}
+.tm{flex:1;display:flex;align-items:center;gap:10px}
+.tm.away{flex-direction:row-reverse;text-align:right}
+.crest{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:800;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.tname{font-size:13.5px;font-weight:700;line-height:1.2}
+.tsub{font-size:10.5px;color:var(--mut);margin-top:2px}
+.vs{font-size:12px;font-weight:800;color:var(--mut);padding:0 2px}
+.mfoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+.mfoot .st{font-size:11.5px;color:var(--mut)}
+.mfoot .pr{font-size:13px;font-weight:800;color:var(--acc)}
+.hot{position:absolute;top:12px;right:12px;font-size:9px;font-weight:800;padding:3px 8px;border-radius:8px;
+  background:linear-gradient(135deg,#ff6b6b,#ee5253);color:#fff;letter-spacing:.5px}
+
+/* ---------- Stadium map ---------- */
+.mapwrap{background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);
+  border-radius:22px;padding:14px;margin-bottom:14px;position:relative}
+.maphead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.maphead .nm{font-size:15px;font-weight:800}
+.maphead .cap{font-size:11px;color:var(--mut)}
+svg.map{width:100%;height:auto;display:block;touch-action:manipulation}
+.sec{cursor:pointer;transition:.18s}
+.sec polygon,.sec rect{transition:.18s}
+.sec:hover polygon,.sec:hover rect{filter:brightness(1.35)}
+.sec.sel polygon,.sec.sel rect{stroke:var(--acc)!important;stroke-width:3!important;filter:brightness(1.3)}
+.sec.dis{opacity:.35;cursor:not-allowed}
+.seclbl{font-size:9px;font-weight:800;fill:#fff;pointer-events:none;text-anchor:middle;
+  paint-order:stroke;stroke:rgba(0,0,0,.5);stroke-width:2px}
+.legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.lgi{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--mut)}
+.lgd{width:12px;height:12px;border-radius:4px}
+
+.zonebar{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+.zonebar::-webkit-scrollbar{display:none}
+.zcard{min-width:132px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px;cursor:pointer;transition:.2s;flex-shrink:0}
+.zcard.on{border-color:var(--pri);background:var(--card2)}
+.zcard .zn{font-size:12px;font-weight:800;margin-bottom:3px}
+.zcard .zp{font-size:11px;color:var(--acc);font-weight:700}
+.zcard .zs{font-size:9.5px;color:var(--mut);margin-top:2px}
+
+/* ---------- Seats ---------- */
+.seatpanel{background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);
+  border-radius:20px;padding:14px;margin-bottom:14px;display:none}
+.seatpanel.on{display:block;animation:fade .3s}
+.sphead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sphead .t{font-size:14px;font-weight:800}
+.sphead .b{font-size:11px;color:var(--mut)}
+.screenline{text-align:center;font-size:9px;color:var(--mut);letter-spacing:2px;margin-bottom:10px;
+  padding:5px;background:linear-gradient(90deg,transparent,rgba(120,140,255,.12),transparent);border-radius:6px}
+.seatgrid{display:flex;flex-direction:column;gap:4px;align-items:center;overflow-x:auto;padding:4px 0}
+.srow{display:flex;gap:3px;align-items:center}
+.rlab{font-size:8px;color:var(--mut);width:14px;text-align:center;font-weight:700}
+.seat{width:17px;height:17px;border-radius:4px;font-size:7px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.12s;font-weight:700;color:rgba(255,255,255,.7)}
+.seat.av{background:rgba(91,124,250,.35);border:1px solid rgba(91,124,250,.5)}
+.seat.vip{background:rgba(246,196,83,.4);border:1px solid rgba(246,196,83,.6)}
+.seat.sel{background:var(--acc)!important;border-color:#fff!important;color:#04140d;transform:scale(1.25);
+  box-shadow:0 0 12px rgba(46,230,168,.7);z-index:2}
+.seat.so{background:rgba(120,130,160,.15);cursor:not-allowed}
+.seat:active:not(.so){transform:scale(1.3)}
+
+/* ---------- 3D VIEW ---------- */
+.viewwrap{position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--line);
+  background:#000;margin-bottom:14px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+#view3d{width:100%;display:block;touch-action:none}
+.vbadge{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
+  padding:6px 12px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.15)}
+.vbadge span{color:var(--acc)}
+.v360{position:absolute;top:12px;right:12px;background:rgba(46,230,168,.15);backdrop-filter:blur(8px);
+  border:1px solid rgba(46,230,168,.4);color:var(--acc);padding:5px 11px;border-radius:10px;font-size:10px;font-weight:800}
+.vhint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);
+  backdrop-filter:blur(8px);padding:6px 14px;border-radius:20px;font-size:10.5px;color:#cfd6ee;
+  display:flex;align-items:center;gap:6px;transition:.4s;pointer-events:none}
+.vstats{position:absolute;bottom:12px;left:12px;right:12px;display:flex;gap:8px;pointer-events:none}
+.vstat{flex:1;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:7px 9px;text-align:center}
+.vstat .l{font-size:8.5px;color:#9aa4c4;text-transform:uppercase;letter-spacing:.5px}
+.vstat .v{font-size:12px;font-weight:800;margin-top:1px}
+
+.rowctrl{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:14px}
+.rowctrl .rh{display:flex;justify-content:space-between;font-size:12px;margin-bottom:9px}
+.rowctrl .rh b{color:var(--pri2)}
+input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:3px;
+  background:linear-gradient(90deg,var(--pri) 0%,var(--pri) var(--fill,50%),var(--card2) var(--fill,50%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:#fff;border:4px solid var(--pri);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.qbar{display:flex;gap:6px;margin-top:12px}
+.qi{flex:1;text-align:center;font-size:9px;color:var(--mut);padding:6px;border-radius:8px;background:var(--card2)}
+.qi.good{color:var(--acc)}
+
+/* ---------- Info / purchase ---------- */
+.panel{background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);
+  border-radius:18px;padding:16px;margin-bottom:14px}
+.ptitle{font-size:14px;font-weight:800;margin-bottom:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.cell{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.cell .l{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+.cell .v{font-size:14px;font-weight:800;margin-top:3px}
+.prow{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;color:var(--mut)}
+.prow b{color:var(--txt)}
+.prow.tot{font-size:17px;font-weight:800;color:var(--acc);border-top:1px dashed var(--line);margin-top:8px;padding-top:12px}
+.fld{margin-bottom:13px}
+.fld label{font-size:11px;color:var(--mut);display:block;margin-bottom:6px;font-weight:600}
+.fld input{width:100%;padding:13px 15px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);
+  color:var(--txt);font-size:14px;outline:none}
+.fld input:focus{border-color:var(--pri)}
+.promo{display:flex;gap:8px}
+.promo input{flex:1}
+.promo button{padding:0 18px;border-radius:12px;border:none;background:var(--pri);color:#fff;font-weight:700;cursor:pointer;font-size:13px}
+
+/* ---------- Bottom bar ---------- */
+.bar{position:fixed;bottom:0;left:0;right:0;z-index:60;background:rgba(15,20,36,.92);backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:none}
+.bar.on{display:block}
+.barin{max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.bar .info .p{font-size:19px;font-weight:800;color:var(--acc)}
+.bar .info .s{font-size:10.5px;color:var(--mut)}
+.btn{padding:14px 26px;border-radius:14px;border:none;font-size:14px;font-weight:800;cursor:pointer;transition:.2s;
+  background:linear-gradient(135deg,var(--pri),#7b5cfa);color:#fff;box-shadow:0 8px 22px rgba(91,124,250,.4)}
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.4;box-shadow:none;cursor:not-allowed}
+.btn.gr{background:linear-gradient(135deg,var(--acc),#17b87f);box-shadow:0 8px 22px rgba(46,230,168,.35);color:#04140d}
+
+/* ---------- Success ---------- */
+.succ{display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 20px;min-height:75vh;justify-content:center}
+.tick{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,var(--acc),#17b87f);
+  display:flex;align-items:center;justify-content:center;font-size:46px;margin-bottom:22px;
+  box-shadow:0 0 0 12px rgba(46,230,168,.12);animation:pop .6s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.succ h2{font-size:23px;margin-bottom:8px}
+.succ p{color:var(--mut);line-height:1.5;margin-bottom:26px;font-size:13.5px}
+.qr{width:190px;height:190px;background:#fff;border-radius:18px;padding:14px;margin-bottom:16px}
+.qr div{width:100%;height:100%;background:
+  repeating-conic-gradient(#000 0 25%,#fff 0 50%) 0 0/11px 11px;border-radius:6px}
+
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-16px);z-index:200;
+  background:var(--card2);border:1px solid var(--pri);padding:11px 20px;border-radius:12px;font-size:13px;
+  font-weight:600;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.load{position:fixed;inset:0;background:rgba(8,11,20,.85);z-index:300;display:none;
+  align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.load.on{display:flex}
+.spin{width:44px;height:44px;border:3px solid var(--card2);border-top-color:var(--pri);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
-    <div class="toast" id="toast"></div>
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loader"></div>
+<div class="toast" id="toast"></div>
+<div class="load" id="load"><div class="spin"></div><div style="font-size:13px;color:var(--mut)">Загрузка 3D-вида…</div></div>
+
+<div class="app">
+  <div class="hdr">
+    <div class="ic" id="back" style="display:none" onclick="back()">←</div>
+    <h1 id="htitle">⚽ Матчи РПЛ</h1>
+    <div class="step" id="hstep"></div>
+  </div>
+
+  <!-- MATCHES -->
+  <div class="scr on" id="s-matches">
+    <div class="search"><span class="s">🔍</span>
+      <input id="q" placeholder="Команда, стадион или город…" oninput="renderMatches()"></div>
+    <div class="chips" id="chips"></div>
+    <div class="mtitle" id="mlabel">Ближайшие матчи</div>
+    <div id="mlist"></div>
+  </div>
+
+  <!-- STADIUM -->
+  <div class="scr" id="s-stadium">
+    <div class="mapwrap">
+      <div class="maphead"><div class="nm" id="stName">Стадион</div><div class="cap" id="stCap"></div></div>
+      <svg class="map" id="svgmap" viewBox="0 0 640 460"></svg>
+      <div class="legend">
+        <div class="lgi"><div class="lgd" style="background:#3d55a4"></div>Стандарт</div>
+        <div class="lgi"><div class="lgd" style="background:#7b5cfa"></div>Комфорт</div>
+        <div class="lgi"><div class="lgd" style="background:#f6c453"></div>VIP</div>
+        <div class="lgi"><div class="lgd" style="background:#2a2f42"></div>Продано</div>
+        <div class="lgi"><div class="lgd" style="background:var(--acc)"></div>Ваш сектор</div>
+      </div>
     </div>
-
-    <div class="header" id="header">
-        <button class="back-btn" id="backBtn" style="display:none;" onclick="goBack()">←</button>
-        <div class="header-title" id="headerTitle">⚽ ФутболБилеты Pro</div>
-        <div style="width: 36px;"></div>
+    <div class="mtitle">Категории билетов</div>
+    <div class="zonebar" id="zones"></div>
+    <div class="seatpanel" id="seatpanel">
+      <div class="sphead"><div class="t" id="spTitle">Сектор</div><div class="b" id="spSub"></div></div>
+      <div class="screenline">◤ ПОЛЕ ◢</div>
+      <div class="seatgrid" id="seatgrid"></div>
     </div>
+  </div>
 
-    <!-- Screen: Stadium Selection -->
-    <div class="screen active" id="screen-stadium-select">
-        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Выберите стадион</h2>
-        <div class="stadium-selector">
-            <div class="stadium-cards" id="stadiumCards"></div>
-        </div>
+  <!-- 3D PREVIEW -->
+  <div class="scr" id="s-view">
+    <div class="viewwrap">
+      <canvas id="view3d"></canvas>
+      <div class="vbadge" id="vbadge">Сектор <span>A</span></div>
+      <div class="v360">● 360° LIVE</div>
+      <div class="vstats" id="vstats"></div>
+      <div class="vhint" id="vhint">👆 Свайпайте по виду — осмотритесь вокруг</div>
     </div>
-
-    <!-- Screen: Stadium Map -->
-    <div class="screen" id="screen-stadium-map">
-        <div class="stadium-map-wrapper">
-            <div class="stadium-map-container" id="mapContainer">
-                <svg class="stadium-svg" id="stadiumSvg" viewBox="0 0 800 600"></svg>
-            </div>
-            <div class="map-controls">
-                <button class="map-control-btn" onclick="zoomIn()">+</button>
-                <button class="map-control-btn" onclick="zoomOut()">−</button>
-                <button class="map-control-btn" onclick="resetZoom()">⟲</button>
-            </div>
-            <div class="section-info" id="sectionInfo">
-                <div class="section-info-header">
-                    <div class="section-info-title" id="sectionInfoTitle">Сектор A</div>
-                    <div class="section-info-price" id="sectionInfoPrice">5 000 ₽</div>
-                </div>
-                <div class="section-info-stats">
-                    <div class="section-stat">
-                        <div class="section-stat-label">Рядов</div>
-                        <div class="section-stat-value" id="sectionRows">12</div>
-                    </div>
-                    <div class="section-stat">
-                        <div class="section-stat-label">Мест</div>
-                        <div class="section-stat-value" id="sectionSeats">240</div>
-                    </div>
-                    <div class="section-stat">
-                        <div class="section-stat-label">Доступно</div>
-                        <div class="section-stat-value" id="sectionAvailable">180</div>
-                    </div>
-                </div>
-                <div class="section-actions">
-                    <button class="section-btn section-btn-secondary" onclick="closeSectionInfo()">Закрыть</button>
-                    <button class="section-btn section-btn-primary" onclick="selectSection()">Выбрать места</button>
-                </div>
-            </div>
-        </div>
+    <div class="rowctrl">
+      <div class="rh"><span>Ряд: <b id="rowNow">10</b></span><span id="rowQuality" style="color:var(--acc);font-weight:700"></span></div>
+      <input type="range" id="rowSlider" min="1" max="30" value="10" oninput="onRow(this.value)">
+      <div class="qbar">
+        <div class="qi">Ряд 1–5<br>близко</div>
+        <div class="qi good">Ряд 6–18<br>лучший обзор</div>
+        <div class="qi">Ряд 19+<br>панорама</div>
+      </div>
     </div>
-
-    <!-- Screen: Seat Selection -->
-    <div class="screen" id="screen-seat-select">
-        <div class="seat-selection-container">
-            <div class="seat-grid-header">
-                <div class="seat-grid-title" id="seatGridTitle">Сектор A — Выберите место</div>
-                <div class="seat-legend">
-                    <div class="legend-item"><div class="legend-dot available"></div>Свободно</div>
-                    <div class="legend-item"><div class="legend-dot selected"></div>Выбрано</div>
-                    <div class="legend-item"><div class="legend-dot sold"></div>Занято</div>
-                </div>
-            </div>
-            <div class="seat-screen">
-                <div class="seat-rows" id="seatRows"></div>
-            </div>
-        </div>
+    <div class="panel">
+      <div class="ptitle">Детали места</div>
+      <div class="grid2">
+        <div class="cell"><div class="l">Сектор</div><div class="v" id="iSec">—</div></div>
+        <div class="cell"><div class="l">Ряд / Место</div><div class="v" id="iRow">—</div></div>
+        <div class="cell"><div class="l">До поля</div><div class="v" id="iDist">—</div></div>
+        <div class="cell"><div class="l">Категория</div><div class="v" id="iCat">—</div></div>
+      </div>
     </div>
+  </div>
 
-    <!-- Screen: 3D Preview -->
-    <div class="screen" id="screen-preview">
-        <div class="preview-3d-container">
-            <div class="preview-3d-viewport" id="previewViewport">
-                <div class="preview-crowd"></div>
-                <div class="preview-field"></div>
-                <div class="preview-field-lines"></div>
-                <div class="preview-field-center"></div>
-                <div class="preview-overlay"></div>
-                <div class="preview-stats">
-                    <div class="preview-stat-card">
-                        <div class="preview-stat-label">Расстояние</div>
-                        <div class="preview-stat-value" id="previewDistance">15м</div>
-                    </div>
-                    <div class="preview-stat-card">
-                        <div class="preview-stat-label">Угол обзора</div>
-                        <div class="preview-stat-value" id="previewAngle">45°</div>
-                    </div>
-                    <div class="preview-stat-card">
-                        <div class="preview-stat-label">Качество</div>
-                        <div class="preview-stat-value" id="previewQuality">Отличное</div>
-                    </div>
-                </div>
-            </div>
-            <div class="preview-controls">
-                <button class="preview-control-btn" onclick="rotateView()">
-                    🔄 Панорама
-                </button>
-                <button class="preview-control-btn" onclick="toggle360()">
-                    🎥 360°
-                </button>
-                <button class="preview-control-btn" onclick="shareView()">
-                    📤 Поделиться
-                </button>
-            </div>
-        </div>
-
-        <div class="seat-info-card">
-            <div class="seat-info-header">
-                <div class="seat-info-title" id="seatInfoTitle">Сектор A, Ряд 5, Место 12</div>
-                <div class="seat-quality-badge quality-excellent" id="seatQualityBadge">Отличный вид</div>
-            </div>
-            <div class="seat-details">
-                <div class="seat-detail">
-                    <div class="seat-detail-label">Сектор</div>
-                    <div class="seat-detail-value" id="seatInfoSector">A</div>
-                </div>
-                <div class="seat-detail">
-                    <div class="seat-detail-label">Ряд</div>
-                    <div class="seat-detail-value" id="seatInfoRow">5</div>
-                </div>
-                <div class="seat-detail">
-                    <div class="seat-detail-label">Место</div>
-                    <div class="seat-detail-value" id="seatInfoSeat">12</div>
-                </div>
-                <div class="seat-detail">
-                    <div class="seat-detail-label">Категория</div>
-                    <div class="seat-detail-value" id="seatInfoCategory">VIP</div>
-                </div>
-            </div>
-        </div>
+  <!-- PURCHASE -->
+  <div class="scr" id="s-buy">
+    <div class="panel">
+      <div class="ptitle" id="buyMatch">Матч</div>
+      <div class="grid2">
+        <div class="cell"><div class="l">Дата</div><div class="v" id="bDate">—</div></div>
+        <div class="cell"><div class="l">Время</div><div class="v" id="bTime">—</div></div>
+        <div class="cell"><div class="l">Стадион</div><div class="v" id="bStad" style="font-size:12px">—</div></div>
+        <div class="cell"><div class="l">Место</div><div class="v" id="bSeat">—</div></div>
+      </div>
+      <div style="margin-top:14px">
+        <div class="prow"><span>Билет</span><b id="pTick">—</b></div>
+        <div class="prow"><span>Сервисный сбор (10%)</span><b id="pServ">—</b></div>
+        <div class="prow" id="pDiscRow" style="display:none"><span style="color:var(--acc)">Скидка по промокоду</span><b id="pDisc" style="color:var(--acc)"></b></div>
+        <div class="prow tot"><span>Итого</span><span id="pTot">—</span></div>
+      </div>
     </div>
-
-    <div class="bottom-bar" id="bottomBar" style="display:none;">
-        <div class="bottom-bar-info">
-            <span id="bottomPrice">от 2 500 ₽</span>
-            <span id="bottomLabel">Выберите сектор</span>
-        </div>
-        <button class="btn-primary" id="bottomBtn" onclick="nextScreen()" disabled>
-            Продолжить
-        </button>
+    <div class="panel">
+      <div class="ptitle">Промокод</div>
+      <div class="promo"><input id="promo" placeholder="ФУТБОЛ2026"><button onclick="applyPromo()">OK</button></div>
     </div>
+    <div class="panel">
+      <div class="ptitle">Данные покупателя (Fan ID)</div>
+      <div class="fld"><label>Имя и фамилия</label><input id="fio" placeholder="Иван Иванов"></div>
+      <div class="fld"><label>Email для билета</label><input id="mail" placeholder="fan@mail.ru" type="email"></div>
+      <div class="fld"><label>Телефон</label><input id="tel" placeholder="+7 (999) 000-00-00" type="tel"></div>
+    </div>
+  </div>
 
-    <script>
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
-        }
+  <!-- SUCCESS -->
+  <div class="scr" id="s-ok">
+    <div class="succ">
+      <div class="tick">✓</div>
+      <h2>Билет оформлен! 🎉</h2>
+      <p>QR-код отправлен на почту и в ваш Telegram.<br>Покажите его на входе вместе с Fan ID.</p>
+      <div class="qr"><div></div></div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:24px">Заказ №<b id="ord" style="color:var(--txt)"></b></div>
+      <button class="btn gr" onclick="home()">К списку матчей</button>
+    </div>
+  </div>
+</div>
 
-        // Stadium configurations
-        const stadiums = {
-            luzhniki: {
-                id: 'luzhniki',
-                name: 'Лужники',
-                city: 'Москва',
-                capacity: 81000,
-                sections: [
-                    { id: 'A', name: 'Центральная трибуна A', rows: 20, seatsPerRow: 30, price: 8000, color: '#6c5ce7', angle: 0, distance: 15 },
-                    { id: 'B', name: 'Трибуна B', rows: 18, seatsPerRow: 28, price: 6000, color: '#74b9ff', angle: 45, distance: 25 },
-                    { id: 'C', name: 'Трибуна C (за воротами)', rows: 15, seatsPerRow: 25, price: 4000, color: '#fd79a8', angle: 90, distance: 35 },
-                    { id: 'D', name: 'Трибуна D', rows: 18, seatsPerRow: 28, price: 6000, color: '#74b9ff', angle: 135, distance: 25 },
-                    { id: 'E', name: 'Центральная трибуна E', rows: 20, seatsPerRow: 30, price: 8000, color: '#6c5ce7', angle: 180, distance: 15 },
-                    { id: 'F', name: 'Трибуна F', rows: 18, seatsPerRow: 28, price: 6000, color: '#74b9ff', angle: 225, distance: 25 },
-                    { id: 'G', name: 'Трибуна G (за воротами)', rows: 15, seatsPerRow: 25, price: 4000, color: '#fd79a8', angle: 270, distance: 35 },
-                    { id: 'H', name: 'Трибуна H', rows: 18, seatsPerRow: 28, price: 6000, color: '#74b9ff', angle: 315, distance: 25 }
-                ]
-            },
-            otkritie: {
-                id: 'otkritie',
-                name: 'Открытие Арена',
-                city: 'Москва',
-                capacity: 45000,
-                sections: [
-                    { id: 'VIP1', name: 'VIP Ложа', rows: 5, seatsPerRow: 10, price: 15000, color: '#ffeaa7', angle: 0, distance: 10 },
-                    { id: 'A', name: 'Западная трибуна A', rows: 25, seatsPerRow: 35, price: 5000, color: '#6c5ce7', angle: 0, distance: 20 },
-                    { id: 'B', name: 'Северная трибуна B', rows: 20, seatsPerRow: 30, price: 4000, color: '#74b9ff', angle: 90, distance: 30 },
-                    { id: 'C', name: 'Восточная трибуна C', rows: 25, seatsPerRow: 35, price: 5000, color: '#6c5ce7', angle: 180, distance: 20 },
-                    { id: 'D', name: 'Южная трибуна D', rows: 20, seatsPerRow: 30, price: 4000, color: '#74b9ff', angle: 270, distance: 30 }
-                ]
-            },
-            gazprom: {
-                id: 'gazprom',
-                name: 'Газпром Арена',
-                city: 'Санкт-Петербург',
-                capacity: 68000,
-                sections: [
-                    { id: 'A', name: 'Главная трибуна A', rows: 22, seatsPerRow: 32, price: 7000, color: '#6c5ce7', angle: 0, distance: 18 },
-                    { id: 'B', name: 'Трибуна B', rows: 20, seatsPerRow: 30, price: 5500, color: '#74b9ff', angle: 60, distance: 28 },
-                    { id: 'C', name: 'Трибуна C', rows: 18, seatsPerRow: 28, price: 4500, color: '#fd79a8', angle: 120, distance: 32 },
-                    { id: 'D', name: 'Трибуна D', rows: 20, seatsPerRow: 30, price: 5500, color: '#74b9ff', angle: 180, distance: 28 },
-                    { id: 'E', name: 'Трибуна E', rows: 22, seatsPerRow: 32, price: 7000, color: '#6c5ce7', angle: 240, distance: 18 },
-                    { id: 'F', name: 'Трибуна F', rows: 18, seatsPerRow: 28, price: 4500, color: '#fd79a8', angle: 300, distance: 32 }
-                ]
-            }
-        };
+<div class="bar" id="bar"><div class="barin">
+  <div class="info"><div class="p" id="bPrice">—</div><div class="s" id="bLabel">Выберите место</div></div>
+  <button class="btn" id="bBtn" onclick="next()" disabled>Далее</button>
+</div></div>
 
-        let currentScreen = 'stadium-select';
-        let selectedStadium = null;
-        let selectedSection = null;
-        let selectedSeat = null;
-        let mapScale = 1;
-        let mapTranslateX = 0;
-        let mapTranslateY = 0;
+<script>
+/* ============================================================
+   TELEGRAM
+============================================================ */
+const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+const hapt = t => tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t);
 
-        // Initialize stadium cards
-        function renderStadiumCards() {
-            const container = document.getElementById('stadiumCards');
-            container.innerHTML = Object.values(stadiums).map(stadium => `
-                <div class="stadium-card ${selectedStadium?.id === stadium.id ? 'active' : ''}" 
-                     onclick="selectStadium('${stadium.id}')">
-                    <div class="stadium-card-name">${stadium.name}</div>
-                    <div class="stadium-card-city">📍 ${stadium.city}</div>
-                    <div class="stadium-card-capacity">👥 ${stadium.capacity.toLocaleString()} мест</div>
-                </div>
-            `).join('');
-        }
+/* ============================================================
+   ДАННЫЕ СТАДИОНОВ (у каждого — своя уникальная схема)
+   side: N/S = боковые трибуны (вид вдоль поля)
+         E/W = за воротами (вид на ворота)
+         NE/SE/SW/NW = угловые (диагональный вид)
+============================================================ */
+const STADIUMS = {
+  lukoyl: {
+    name:'Лукойл Арена (Открытие)', team:'Спартак', city:'Москва', cap:45360,
+    roofH:38, gapSide:9, gapGoal:11, standH:30,
+    stands:[
+      {id:'A', side:'W', name:'Западная (A) VIP', cat:'vip',  sec:8,  rows:26, seats:24, price:6500, dist:0},
+      {id:'B', side:'N', name:'Северная (B)',      cat:'std',  sec:10, rows:30, seats:28, price:2800, dist:0},
+      {id:'C', side:'E', name:'Восточная (C)',     cat:'comf', sec:8,  rows:26, seats:24, price:4200, dist:0},
+      {id:'D', side:'S', name:'Южная (D) фан',     cat:'std',  sec:10, rows:30, seats:28, price:2200, dist:0},
+      {id:'NW',side:'NW',name:'Сектор NW',         cat:'std',  sec:3,  rows:24, seats:18, price:2500, dist:6},
+      {id:'NE',side:'NE',name:'Сектор NE',         cat:'comf', sec:3,  rows:24, seats:18, price:3600, dist:6},
+      {id:'SE',side:'SE',name:'Сектор SE',         cat:'std',  sec:3,  rows:24, seats:18, price:2500, dist:6},
+      {id:'SW',side:'SW',name:'Сектор SW',         cat:'std',  sec:3,  rows:24, seats:18, price:2500, dist:6},
+    ]
+  },
+  gazprom: {
+    name:'Газпром Арена', team:'Зенит', city:'Санкт-Петербург', cap:68000,
+    roofH:46, gapSide:11, gapGoal:13, standH:40, twoTier:true,
+    stands:[
+      {id:'A1',side:'W',name:'A — Западная VIP',   cat:'vip',  sec:13,rows:34,seats:26,price:8000,dist:0},
+      {id:'B1',side:'N',name:'B — Северная',        cat:'comf', sec:14,rows:38,seats:30,price:4500,dist:0},
+      {id:'C1',side:'E',name:'C — Восточная',       cat:'comf', sec:14,rows:38,seats:30,price:4500,dist:0},
+      {id:'D1',side:'S',name:'D — Южная',           cat:'std',  sec:13,rows:36,seats:28,price:3200,dist:0},
+      {id:'NW',side:'NW',name:'Угловой NW',          cat:'std',  sec:4, rows:30,seats:20,price:2900,dist:8},
+      {id:'NE',side:'NE',name:'Угловой NE',          cat:'std',  sec:4, rows:30,seats:20,price:2900,dist:8},
+      {id:'SE',side:'SE',name:'Угловой SE',          cat:'std',  sec:4, rows:30,seats:20,price:2900,dist:8},
+      {id:'SW',side:'SW',name:'Угловой SW',          cat:'std',  sec:4, rows:30,seats:20,price:2900,dist:8},
+    ]
+  },
+  veb: {
+    name:'ВЭБ Арена', team:'ЦСКА', city:'Москва', cap:30000,
+    roofH:34, gapSide:8, gapGoal:10, standH:26,
+    stands:[
+      {id:'100',side:'W',name:'Западная 100 VIP', cat:'vip', sec:6,rows:22,seats:22,price:5500,dist:0},
+      {id:'200',side:'N',name:'Северная 200',      cat:'std', sec:8,rows:26,seats:26,price:2400,dist:0},
+      {id:'300',side:'E',name:'Восточная 300',     cat:'comf',sec:6,rows:22,seats:22,price:3800,dist:0},
+      {id:'400',side:'S',name:'Южная 400 фан',     cat:'std', sec:8,rows:26,seats:26,price:1800,dist:0},
+      {id:'NW',side:'NW',name:'Угол NW',            cat:'std', sec:2,rows:20,seats:16,price:2100,dist:5},
+      {id:'NE',side:'NE',name:'Угол NE',            cat:'std', sec:2,rows:20,seats:16,price:2100,dist:5},
+      {id:'SE',side:'SE',name:'Угол SE',            cat:'std', sec:2,rows:20,seats:16,price:2100,dist:5},
+      {id:'SW',side:'SW',name:'Угол SW',            cat:'std', sec:2,rows:20,seats:16,price:2100,dist:5},
+    ]
+  },
+  akbars: {
+    name:'Ак Барс Арена', team:'Рубин', city:'Казань', cap:45379,
+    roofH:40, gapSide:10, gapGoal:12, standH:34,
+    stands:[
+      {id:'A',side:'W',name:'A — VIP',        cat:'vip', sec:9,rows:28,seats:24,price:5000,dist:0},
+      {id:'B',side:'N',name:'B — Северная',   cat:'std', sec:11,rows:32,seats:28,price:2000,dist:0},
+      {id:'C',side:'E',name:'C — Восточная',  cat:'comf',sec:9,rows:28,seats:24,price:3300,dist:0},
+      {id:'D',side:'S',name:'D — Южная',      cat:'std', sec:11,rows:32,seats:28,price:1700,dist:0},
+      {id:'NW',side:'NW',name:'Угол NW',       cat:'std', sec:3,rows:26,seats:18,price:1900,dist:7},
+      {id:'NE',side:'NE',name:'Угол NE',       cat:'std', sec:3,rows:26,seats:18,price:1900,dist:7},
+      {id:'SE',side:'SE',name:'Угол SE',       cat:'std', sec:3,rows:26,seats:18,price:1900,dist:7},
+      {id:'SW',side:'SW',name:'Угол SW',       cat:'std', sec:3,rows:26,seats:18,price:1900,dist:7},
+    ]
+  }
+};
 
-        function selectStadium(stadiumId) {
-            selectedStadium = stadiums[stadiumId];
-            renderStadiumCards();
-            showScreen('stadium-map');
-            renderStadiumMap();
-            updateBottomBar();
-        }
+const MATCHES=[
+  {id:1,home:'Спартак',away:'ЦСКА',hc:'#e3231e',ac:'#1c4f9c',hi:'С',ai:'Ц',date:'25 ноя',dow:'СР',time:'19:30',stad:'lukoyl',lg:'РПЛ • 16 тур',hot:true},
+  {id:2,home:'Зенит',away:'Локомотив',hc:'#0d7fcd',ac:'#1aa847',hi:'З',ai:'Л',date:'26 ноя',dow:'ЧТ',time:'17:00',stad:'gazprom',lg:'РПЛ • 16 тур',hot:true},
+  {id:3,home:'Рубин',away:'Краснодар',hc:'#2e8b57',ac:'#0e8b3f',hi:'Р',ai:'К',date:'27 ноя',dow:'ПТ',time:'18:30',stad:'akbars',lg:'РПЛ • 16 тур'},
+  {id:4,home:'ЦСКА',away:'Динамо',hc:'#1c4f9c',ac:'#3d7dff',hi:'Ц',ai:'Д',date:'28 ноя',dow:'СБ',time:'20:00',stad:'veb',lg:'РПЛ • 16 тур'},
+  {id:5,home:'Спартак',away:'Динамо',hc:'#e3231e',ac:'#3d7dff',hi:'С',ai:'Д',date:'2 дек',dow:'СР',time:'19:45',stad:'lukoyl',lg:'Кубок России • 1/4'},
+  {id:6,home:'Зенит',away:'ЦСКА',hc:'#0d7fcd',ac:'#1c4f9c',hi:'З',ai:'Ц',date:'3 дек',dow:'ЧТ',time:'20:00',stad:'gazprom',lg:'Кубок России • 1/4'},
+];
 
-        function renderStadiumMap() {
-            if (!selectedStadium) return;
+/* ============================================================
+   STATE
+============================================================ */
+let S={screen:'matches',match:null,stad:null,stand:null,section:null,seat:null,
+       filter:'all',promo:false,row:10,yaw:0,pitch:0};
+const CAT={std:{n:'Стандарт',c:'#3d55a4'},comf:{n:'Комфорт',c:'#7b5cfa'},vip:{n:'VIP',c:'#f6c453'}};
 
-            const svg = document.getElementById('stadiumSvg');
-            const centerX = 400;
-            const centerY = 300;
-            const radiusX = 250;
-            const radiusY = 180;
+/* ============================================================
+   VECTORS + ПРОЕКЦИЯ (настоящее 3D)
+============================================================ */
+const V={
+  sub:(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z}),
+  add:(a,b)=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z}),
+  mul:(a,s)=>({x:a.x*s,y:a.y*s,z:a.z*s}),
+  dot:(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z,
+  cross:(a,b)=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x}),
+  len:a=>Math.hypot(a.x,a.y,a.z),
+  norm:a=>{const l=Math.hypot(a.x,a.y,a.z)||1;return{x:a.x/l,y:a.y/l,z:a.z/l}}
+};
 
-            let svgContent = `
-                <defs>
-                    <radialGradient id="fieldGradient">
-                        <stop offset="0%" style="stop-color:#2d8a4e;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#1a5c32;stop-opacity:1" />
-                    </radialGradient>
-                </defs>
-                
-                <!-- Field -->
-                <ellipse cx="${centerX}" cy="${centerY}" rx="150" ry="100" fill="url(#fieldGradient)" stroke="#fff" stroke-width="2"/>
-                <line x1="${centerX - 150}" y1="${centerY}" x2="${centerX + 150}" y2="${centerY}" stroke="#fff" stroke-width="2"/>
-                <circle cx="${centerX}" cy="${centerY}" r="30" fill="none" stroke="#fff" stroke-width="2"/>
-                
-                <!-- Stadium outline -->
-                <ellipse cx="${centerX}" cy="${centerY}" rx="${radiusX}" ry="${radiusY}" fill="none" stroke="rgba(108, 92, 231, 0.3)" stroke-width="3"/>
-            `;
+function buildCam(pos,target,yaw=0,pitch=0){
+  let fwd=V.norm(V.sub(target,pos));
+  // apply yaw (around Y) and pitch (around right axis)
+  const cy=Math.cos(yaw),sy=Math.sin(yaw);
+  fwd=V.norm({x:fwd.x*cy-fwd.z*sy,y:fwd.y,z:fwd.x*sy+fwd.z*cy});
+  let right=V.norm(V.cross(fwd,{x:0,y:1,z:0}));
+  let up=V.cross(right,fwd);
+  const cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const fwd2=V.norm(V.add(V.mul(fwd,cp),V.mul(up,sp)));
+  up=V.cross(right,fwd2);
+  return{pos,fwd:fwd2,right,up};
+}
+function mkProj(cam,W,H,fov){
+  const f=(H/2)/Math.tan(fov/2);
+  return p=>{
+    const r=V.sub(p,cam.pos);
+    const z=V.dot(r,cam.fwd);
+    if(z<0.15)return null;
+    return{x:W/2+V.dot(r,cam.right)*f/z, y:H/2-V.dot(r,cam.up)*f/z, z, s:f/z};
+  };
+}
+// clip a segment against near plane so lines never wrap around camera
+function clipNear(a,b,cam,near){
+  const za=V.dot(V.sub(a,cam.pos),cam.fwd), zb=V.dot(V.sub(b,cam.pos),cam.fwd);
+  if(za>=near&&zb>=near)return[a,b];
+  if(za<near&&zb<near)return null;
+  const t=(near-za)/(zb-za);
+  const m=V.add(a,V.mul(V.sub(b,a),t));
+  return za<near?[m,b]:[a,m];
+}
 
-            // Render sections
-            selectedStadium.sections.forEach((section, index) => {
-                const angle = (section.angle * Math.PI) / 180;
-                const sectionRadiusX = radiusX - 40;
-                const sectionRadiusY = radiusY - 40;
-                
-                const x = centerX + Math.cos(angle) * sectionRadiusX;
-                const y = centerY + Math.sin(angle) * sectionRadiusY;
+/* ============================================================
+   РЕНДЕР ВИДА С МЕСТА (Canvas 3D)
+============================================================ */
+let crowdCache=null;
+function genCrowd(){ // pre-generate crowd dots once
+  const c=[]; const cols=['#e8e8e8','#d94f4f','#4f7fd9','#f2c14e','#5bbf6a','#c9c9d9','#e07b39','#8b5fd9'];
+  for(let i=0;i<900;i++)c.push({x:Math.random(),y:Math.random(),c:cols[(Math.random()*cols.length)|0],r:.5+Math.random()*.7});
+  return c;
+}
 
-                const sectionAngleSpan = (2 * Math.PI) / selectedStadium.sections.length;
-                const startAngle = angle - sectionAngleSpan / 2;
-                const endAngle = angle + sectionAngleSpan / 2;
+function seatCamera(){
+  const st=S.stad, std=S.stand;
+  const halfL=52.5, halfW=34; // поле 105×68
+  const gap = (std.side==='E'||std.side==='W')? st.gapGoal : st.gapSide;
+  const base = (std.side==='E'||std.side==='W')? halfL : halfW;
+  const rowDepth=.82, rowRise=.52;
+  const row=S.row, seats=std.seats;
+  const back = gap + (row-1)*rowDepth + (std.dist||0);
+  const height = 1.15 + st.standH*0 + (row-1)*rowRise + 3;
+  const spread = (S.seat? (S.seat.n-(seats+1)/2)*.55 : 0);
 
-                const x1 = centerX + Math.cos(startAngle) * radiusX;
-                const y1 = centerY + Math.sin(startAngle) * radiusY;
-                const x2 = centerX + Math.cos(endAngle) * radiusX;
-                const y2 = centerY + Math.sin(endAngle) * radiusY;
+  let pos,target;
+  const A={ // direction stand -> field
+    W:{p:[-back,height,0], t:[0,1,0], off:'z'},
+    E:{p:[ back,height,0], t:[0,1,0], off:'z'},
+    N:{p:[0,height,-back], t:[0,1,0], off:'x'},
+    S:{p:[0,height, back], t:[0,1,0], off:'x'},
+    NW:{p:[-back*.78,height,-back*.78],t:[0,1,0],off:'d'},
+    NE:{p:[ back*.78,height,-back*.78],t:[0,1,0],off:'d'},
+    SE:{p:[ back*.78,height, back*.78],t:[0,1,0],off:'d'},
+    SW:{p:[-back*.78,height, back*.78],t:[0,1,0],off:'d'},
+  }[std.side];
+  pos={x:A.p[0],y:A.p[1],z:A.p[2]};
+  if(A.off==='x')pos.x+=spread*1.4;
+  if(A.off==='z')pos.z+=spread*1.4;
+  if(A.off==='d'){pos.x+=spread;pos.z+=spread;}
+  target={x:A.t[0],y:A.t[1],z:A.t[2]};
+  return{cam:buildCam(pos,target,S.yaw,S.pitch),pos,height,dist:back};
+}
 
-                const ix1 = centerX + Math.cos(startAngle) * (radiusX - 60);
-                const iy1 = centerY + Math.sin(startAngle) * (radiusY - 60);
-                const ix2 = centerX + Math.cos(endAngle) * (radiusX - 60);
-                const iy2 = centerY + Math.sin(endAngle) * (radiusY - 60);
+function renderView(){
+  const cv=document.getElementById('view3d'); if(!cv)return;
+  const wrap=cv.parentElement;
+  const W=wrap.clientWidth, H=Math.round(W*0.62);
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  if(cv.width!==W*dpr){cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';}
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const st=S.stad, std=S.stand;
+  const {cam,pos,height,dist}=seatCamera();
+  const P=mkProj(cam,W,H,68*Math.PI/180);
+  if(!crowdCache)crowdCache=genCrowd();
 
-                const path = `M ${x1} ${y1} A ${radiusX} ${radiusY} 0 0 1 ${x2} ${y2} L ${ix2} ${iy2} A ${radiusX - 60} ${radiusY - 60} 0 0 0 ${ix1} ${iy1} Z`;
+  const halfL=52.5,halfW=34;
+  const isNight=true;
 
-                svgContent += `
-                    <path d="${path}" 
-                          fill="${section.color}" 
-                          fill-opacity="0.3" 
-                          stroke="${section.color}" 
-                          stroke-width="2"
-                          class="stadium-section"
-                          data-section-id="${section.id}"
-                          style="cursor: pointer; transition: all 0.3s;"
-                          onmouseover="this.style.fillOpacity='0.6'"
-                          onmouseout="this.style.fillOpacity='0.3'"
-                          onclick="showSectionInfo('${section.id}')"/>
-                    
-                    <text x="${x}" y="${y}" 
-                          text-anchor="middle" 
-                          dominant-baseline="middle" 
-                          fill="white" 
-                          font-size="20" 
-                          font-weight="bold"
-                          style="pointer-events: none;">
-                        ${section.id}
-                    </text>
-                `;
-            });
+  /* --- 1. НЕБО / ВЕРХ --- */
+  let sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#05070f');sky.addColorStop(.4,'#0b1024');sky.addColorStop(1,'#101a2e');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
 
-            svg.innerHTML = svgContent;
-        }
+  /* --- 2. КРЫША (козырёк над головой) --- */
+  const roofTop=st.roofH;
+  drawStandQuad(ctx,P,cam,W,H,-70,-70,70,roofTop,-1,'roof');
+  // roof band across top
+  ctx.fillStyle='rgba(10,14,26,.9)';
+  const roofPts=[P({x:-90,y:height+18,z:pos.z}),P({x:90,y:height+18,z:pos.z})];
 
-        function showSectionInfo(sectionId) {
-            const section = selectedStadium.sections.find(s => s.id === sectionId);
-            if (!section) return;
+  /* --- 3. ДАЛЬНИЕ ТРИБУНЫ С ТОЛПОЙ --- */
+  drawStands(ctx,P,cam,W,H,st,std,height);
 
-            selectedSection = section;
-            
-            document.getElementById('sectionInfoTitle').textContent = section.name;
-            document.getElementById('sectionInfoPrice').textContent = section.price.toLocaleString() + ' ₽';
-            document.getElementById('sectionRows').textContent = section.rows;
-            document.getElementById('sectionSeats').textContent = section.rows * section.seatsPerRow;
-            document.getElementById('sectionAvailable').textContent = Math.floor(section.rows * section.seatsPerRow * 0.75);
-            
-            document.getElementById('sectionInfo').classList.add('visible');
-            updateBottomBar();
-        }
+  /* --- 4. РЕКЛАМНЫЕ БОРТЫ --- */
+  drawAdBoards(ctx,P,cam,halfL,halfW);
 
-        function closeSectionInfo() {
-            document.getElementById('sectionInfo').classList.remove('visible');
-            selectedSection = null;
-            updateBottomBar();
-        }
+  /* --- 5. ПОЛЕ --- */
+  drawField(ctx,P,cam,halfL,halfW);
 
-        function selectSection() {
-            if (!selectedSection) return;
-            closeSectionInfo();
-            showScreen('seat-select');
-            renderSeatGrid();
-            updateBottomBar();
-        }
+  /* --- 6. ВОРОТА --- */
+  drawGoal(ctx,P,cam,-halfL,halfW);
+  drawGoal(ctx,P,cam, halfL,halfW);
 
-        function renderSeatGrid() {
-            if (!selectedSection) return;
+  /* --- 7. ИГРОКИ --- */
+  drawPlayers(ctx,P,cam);
 
-            document.getElementById('seatGridTitle').textContent = `${selectedSection.name} — Выберите место`;
-            
-            const container = document.getElementById('seatRows');
-            let html = '';
+  /* --- 8. ПЕРЕДНИЙ ПЛАН (головы впереди сидящих) --- */
+  drawForeground(ctx,P,cam,W,H,std,height);
 
-            for (let row = 1; row <= selectedSection.rows; row++) {
-                html += `<div class="seat-row"><span class="seat-row-label">Р${row}</span>`;
-                
-                for (let seat = 1; seat <= selectedSection.seatsPerRow; seat++) {
-                    const isSold = Math.random() < 0.25;
-                    const cls = isSold ? 'sold' : 'available';
-                    html += `<div class="seat ${cls}" 
-                                 onclick="selectSeat(${row}, ${seat}, this)" 
-                                 data-row="${row}" 
-                                 data-seat="${seat}">
-                                ${seat}
-                             </div>`;
-                }
-                
-                html += `<span class="seat-row-label">Р${row}</span></div>`;
-            }
+  /* --- 9. АТМОСФЕРА: виньетка, свет прожекторов, дымка --- */
+  atmosphere(ctx,W,H,cam,P,pos);
 
-            container.innerHTML = html;
-        }
+  // update stats
+  updateStats(dist,height);
+}
 
-        function selectSeat(row, seat, element) {
-            if (element.classList.contains('sold')) {
-                showToast('Это место занято 😔');
-                return;
-            }
+function poly(ctx,pts,close=true){
+  const v=pts.filter(p=>p); if(v.length<3)return false;
+  ctx.beginPath();ctx.moveTo(v[0].x,v[0].y);
+  for(let i=1;i<v.length;i++)ctx.lineTo(v[i].x,v[i].y);
+  if(close)ctx.closePath();return true;
+}
 
-            document.querySelectorAll('.seat').forEach(s => s.classList.remove('selected'));
-            element.classList.add('selected');
+/* трибуны вокруг поля */
+function drawStands(ctx,P,cam,W,H,st,std,myHeight){
+  const halfL=52.5,halfW=34;
+  const gS=st.gapSide,gG=st.gapGoal,sh=st.standH;
+  const stands=[
+    {n:'W',x0:-halfL-gG-2,x1:halfL+gG+2,z:-halfW-gS-2, far:'z-'},
+  ];
+  // Рисуем 4 трибуны как наклонные плоскости с толпой
+  const defs=[
+    // [bottomZ, topZ, x-range, side]
+    {b:-halfW-gS, t:-halfW-gS-sh*.9, xa:-halfL-gG-6, xb:halfL+gG+6, yb:2, yt:sh, key:'N'},
+    {b: halfW+gS, t: halfW+gS+sh*.9, xa:-halfL-gG-6, xb:halfL+gG+6, yb:2, yt:sh, key:'S'},
+    {bx:-halfL-gG,tx:-halfL-gG-sh*.9, za:-halfW-gS-6, zb:halfW+gS+6, yb:2, yt:sh, key:'W'},
+    {bx: halfL+gG,tx: halfL+gG+sh*.9, za:-halfW-gS-6, zb:halfW+gS+6, yb:2, yt:sh, key:'E'},
+  ];
+  defs.forEach(d=>{
+    let pts;
+    if(d.key==='N'||d.key==='S'){
+      pts=[P({x:d.xa,y:d.yb,z:d.b}),P({x:d.xb,y:d.yb,z:d.b}),P({x:d.xb,y:d.yt,z:d.t}),P({x:d.xa,y:d.yt,z:d.t})];
+    }else{
+      pts=[P({x:d.bx,y:d.yb,z:d.za}),P({x:d.bx,y:d.yb,z:d.zb}),P({x:d.tx,y:d.yt,z:d.zb}),P({x:d.tx,y:d.yt,z:d.za})];
+    }
+    if(!poly(ctx,pts))return;
+    // base dark
+    const g=ctx.createLinearGradient(0,Math.min(...pts.filter(p=>p).map(p=>p.y)),0,Math.max(...pts.filter(p=>p).map(p=>p.y)));
+    g.addColorStop(0,'#141a30');g.addColorStop(1,'#0c1120');
+    ctx.fillStyle=g;ctx.fill();
+    // crowd clipped inside
+    ctx.save();ctx.clip();
+    const bb=pts.filter(p=>p);
+    const minx=Math.min(...bb.map(p=>p.x)),maxx=Math.max(...bb.map(p=>p.x));
+    const miny=Math.min(...bb.map(p=>p.y)),maxy=Math.max(...bb.map(p=>p.y));
+    crowdCache.forEach(c=>{
+      const x=minx+c.x*(maxx-minx), y=miny+c.y*(maxy-miny);
+      ctx.fillStyle=c.c;ctx.globalAlpha=.5;
+      ctx.beginPath();ctx.arc(x,y,c.r*1.1,0,7);ctx.fill();
+    });
+    ctx.globalAlpha=1;ctx.restore();
+    // rim light
+    ctx.strokeStyle='rgba(140,160,255,.18)';ctx.lineWidth=1;
+    if(poly(ctx,pts))ctx.stroke();
+  });
 
-            selectedSeat = { row, seat };
-            updateBottomBar();
-            showToast(`Выбрано: Ряд ${row}, Место ${seat}`);
-        }
+  // Крыша — тёмная полоса сверху по периметру
+  ctx.fillStyle='rgba(6,9,18,.85)';
+  ctx.fillRect(0,0,W,H*0.12);
+}
 
-        function showPreview() {
-            if (!selectedSeat || !selectedSection) return;
+/* рекламные борта вокруг поля */
+function drawAdBoards(ctx,P,cam,halfL,halfW){
+  const h=1.0, off=1.5;
+  const colors=['#e3231e','#0d7fcd','#2ee6a8','#f6c453','#7b5cfa'];
+  const boards=[];
+  const seg=9;
+  for(let i=0;i<seg;i++){
+    const x0=-halfL+(2*halfL/seg)*i, x1=x0+2*halfL/seg;
+    boards.push([{x:x0,y:0,z:-halfW-off},{x:x1,y:0,z:-halfW-off},{x:x1,y:h,z:-halfW-off},{x:x0,y:h,z:-halfW-off}]);
+    boards.push([{x:x0,y:0,z: halfW+off},{x:x1,y:0,z: halfW+off},{x:x1,y:h,z: halfW+off},{x:x0,y:h,z: halfW+off}]);
+  }
+  for(let i=0;i<7;i++){
+    const z0=-halfW+(2*halfW/7)*i, z1=z0+2*halfW/7;
+    boards.push([{x:-halfL-off,y:0,z:z0},{x:-halfL-off,y:0,z:z1},{x:-halfL-off,y:h,z:z1},{x:-halfL-off,y:h,z:z0}]);
+    boards.push([{x: halfL+off,y:0,z:z0},{x: halfL+off,y:0,z:z1},{x: halfL+off,y:h,z:z1},{x: halfL+off,y:h,z:z0}]);
+  }
+  boards.forEach((b,i)=>{
+    const pts=b.map(P); if(!poly(ctx,pts))return;
+    ctx.fillStyle=colors[i%colors.length];ctx.globalAlpha=.85;ctx.fill();ctx.globalAlpha=1;
+    ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=.5;ctx.stroke();
+  });
+}
 
-            showScreen('preview');
+/* поле с разметкой и полосами покоса */
+function drawField(ctx,P,cam,halfL,halfW){
+  const c=[{x:-halfL,y:0,z:-halfW},{x:halfL,y:0,z:-halfW},{x:halfL,y:0,z:halfW},{x:-halfL,y:0,z:halfW}];
+  const pts=c.map(P); if(!poly(ctx,pts))return;
+  const g=ctx.createLinearGradient(0,pts[0].y,0,pts[3].y);
+  g.addColorStop(0,'#1c6b34');g.addColorStop(.5,'#2a8c46');g.addColorStop(1,'#217a3b');
+  ctx.fillStyle=g;ctx.fill();
 
-            const distance = selectedSection.distance + (selectedSeat.row * 1.5);
-            const angle = Math.abs(selectedSection.angle - 90);
-            const quality = distance < 20 ? 'Отличное' : (distance < 30 ? 'Хорошее' : 'Среднее');
-            const qualityClass = distance < 20 ? 'excellent' : (distance < 30 ? 'good' : 'average');
+  // полосы покоса
+  ctx.save(); if(poly(ctx,pts)){ctx.clip();}
+  const N=11;
+  for(let i=0;i<N;i++){
+    if(i%2)continue;
+    const x0=-halfL+(2*halfL/N)*i,x1=x0+2*halfL/N;
+    const q=[P({x:x0,y:.02,z:-halfW}),P({x:x1,y:.02,z:-halfW}),P({x:x1,y:.02,z:halfW}),P({x:x0,y:.02,z:halfW})];
+    if(poly(ctx,q)){ctx.fillStyle='rgba(255,255,255,.045)';ctx.fill();}
+  }
+  ctx.restore();
 
-            document.getElementById('previewDistance').textContent = Math.round(distance) + 'м';
-            document.getElementById('previewAngle').textContent = angle + '°';
-            document.getElementById('previewQuality').textContent = quality;
+  // разметка
+  ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.6;
+  const line=(a,b)=>{const cl=clipNear(a,b,cam,.2);if(!cl)return;const p0=P(cl[0]),p1=P(cl[1]);if(p0&&p1){ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.stroke();}};
+  // периметр
+  line({x:-halfL,y:.03,z:-halfW},{x:halfL,y:.03,z:-halfW});
+  line({x:halfL,y:.03,z:-halfW},{x:halfL,y:.03,z:halfW});
+  line({x:halfL,y:.03,z:halfW},{x:-halfL,y:.03,z:halfW});
+  line({x:-halfL,y:.03,z:halfW},{x:-halfL,y:.03,z:-halfW});
+  // центральная
+  line({x:0,y:.03,z:-halfW},{x:0,y:.03,z:halfW});
+  // центральный круг
+  ctx.beginPath();let started=false;
+  for(let a=0;a<=64;a++){const t=a/64*Math.PI*2;const p=P({x:9.15*Math.cos(t),y:.03,z:9.15*Math.sin(t)});
+    if(p){if(!started){ctx.moveTo(p.x,p.y);started=true}else ctx.lineTo(p.x,p.y);}}
+  ctx.stroke();
+  // штрафные
+  [[-1],[1]].forEach(([s])=>{
+    const gx=s*halfL, px=gx-s*16.5, gz=20.16;
+    line({x:gx,y:.03,z:-gz},{x:px,y:.03,z:-gz});
+    line({x:px,y:.03,z:-gz},{x:px,y:.03,z:gz});
+    line({x:px,y:.03,z:gz},{x:gx,y:.03,z:gz});
+    // вратарская
+    const ax=gx-s*5.5, az=9.16;
+    line({x:gx,y:.03,z:-az},{x:ax,y:.03,z:-az});
+    line({x:ax,y:.03,z:-az},{x:ax,y:.03,z:az});
+    line({x:ax,y:.03,z:az},{x:gx,y:.03,z:az});
+  });
+}
 
-            document.getElementById('seatInfoTitle').textContent = `${selectedSection.name}, Ряд ${selectedSeat.row}, Место ${selectedSeat.seat}`;
-            document.getElementById('seatInfoSector').textContent = selectedSection.id;
-            document.getElementById('seatInfoRow').textContent = selectedSeat.row;
-            document.getElementById('seatInfoSeat').textContent = selectedSeat.seat;
-            document.getElementById('seatInfoCategory').textContent = selectedSection.price > 10000 ? 'VIP' : (selectedSection.price > 6000 ? 'Премиум' : 'Стандарт');
+/* ворота */
+function drawGoal(ctx,P,cam,gx,halfW){
+  const w=3.66,d=2.44,off=2;
+  const s=Math.sign(gx)||1;
+  const posts=[
+    [{x:gx,y:0,z:-w/2},{x:gx,y:d,z:-w/2}],
+    [{x:gx,y:0,z: w/2},{x:gx,y:d,z: w/2}],
+    [{x:gx,y:d,z:-w/2},{x:gx,y:d,z: w/2}],
+  ];
+  ctx.strokeStyle='#fff';ctx.lineWidth=2.4;
+  posts.forEach(([a,b])=>{const cl=clipNear(a,b,cam,.2);if(!cl)return;const p0=P(cl[0]),p1=P(cl[1]);
+    if(p0&&p1){ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.stroke();}});
+  // сетка
+  const nx=gx+s*off;
+  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=.7;
+  for(let i=0;i<=6;i++){const z=-w/2+(w/6)*i;
+    const a=P({x:gx,y:d,z}),b=P({x:nx,y:d*.6,z});if(a&&b){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
+}
 
-            const badge = document.getElementById('seatQualityBadge');
-            badge.textContent = quality + ' вид';
-            badge.className = `seat-quality-badge quality-${qualityClass}`;
+/* игроки */
+function drawPlayers(ctx,P,cam){
+  const team1=[[-20,-10],[-20,10],[-8,-18],[-8,0],[-8,18],[5,-12],[5,12],[18,-8],[18,8],[30,0],[-35,0]];
+  const team2=[[20,-10],[20,10],[8,-18],[8,0],[8,18],[-5,-12],[-5,12],[-18,-8],[-18,8],[-30,0],[35,0]];
+  const draw=(arr,col)=>arr.forEach(([x,z])=>{
+    const feet=P({x,y:0,z}),head=P({x,y:1.85,z});
+    if(!feet||!head)return;
+    const h=Math.abs(feet.y-head.y);
+    ctx.fillStyle=col;
+    ctx.fillRect(head.x-h*.22,head.y,h*.44,h*.9); // тело
+    ctx.beginPath();ctx.arc(head.x,head.y,h*.16,0,7);ctx.fill(); // голова
+    // тень
+    ctx.fillStyle='rgba(0,0,0,.25)';
+    ctx.beginPath();ctx.ellipse(feet.x,feet.y,h*.3,h*.1,0,0,7);ctx.fill();
+  });
+  draw(team1,'#f4f4f4'); draw(team2,'#e3231e');
+  // мяч
+  const ball=P({x:0,y:.3,z:0}); if(ball){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ball.x,ball.y,Math.max(2,ball.s*.35),0,7);ctx.fill();}
+}
 
-            // Update 3D preview perspective
-            const viewport = document.getElementById('previewViewport');
-            const field = viewport.querySelector('.preview-field');
-            const perspective = Math.max(60, 90 - selectedSeat.row * 2);
-            const translateZ = -100 - (selectedSeat.row * 5);
-            
-            field.style.transform = `translateX(-50%) rotateX(${perspective}deg) translateZ(${translateZ}px)`;
+/* передний план — затылки впереди сидящих */
+function drawForeground(ctx,P,cam,W,H,std,myHeight){
+  const row=S.row;
+  const rowsAhead=Math.min(row-1,5);
+  if(rowsAhead<=0){
+    // первый ряд — только барьер
+    ctx.fillStyle='rgba(8,11,20,.9)';ctx.fillRect(0,H*.9,W,H*.1);
+    return;
+  }
+  // чем выше ряд, тем ниже/дальше виден передний план
+  const baseY=H*(0.98 - Math.min(row,30)*0.006);
+  for(let r=1;r<=rowsAhead;r++){
+    const y=baseY - (rowsAhead-r)*(H*0.028);
+    const size=(H*0.055)*(1 - (rowsAhead-r)*0.12);
+    ctx.fillStyle=`rgba(5,7,14,${0.95-r*0.05})`;
+    // спинки кресел + головы
+    const count=Math.ceil(W/(size*1.7));
+    for(let i=0;i<count;i++){
+      const x=(i+0.5)*(W/count)+(r%2?size*.3:0);
+      ctx.beginPath();ctx.arc(x,y,size*.5,0,7);ctx.fill();          // голова
+      ctx.fillRect(x-size*.75,y+size*.3,size*1.5,size*1.2);          // плечи/спинка
+    }
+  }
+  ctx.fillStyle='rgba(4,6,12,.98)';ctx.fillRect(0,baseY+H*0.02,W,H);
+}
 
-            updateBottomBar();
-        }
+/* атмосфера: прожекторы, виньетка, дымка */
+function atmosphere(ctx,W,H,cam,P,pos){
+  // лучи прожекторов
+  const lg=ctx.createRadialGradient(W*.5,-H*.2,0,W*.5,-H*.2,H*1.2);
+  lg.addColorStop(0,'rgba(180,200,255,.10)');lg.addColorStop(1,'transparent');
+  ctx.fillStyle=lg;ctx.fillRect(0,0,W,H);
+  // виньетка
+  const vg=ctx.createRadialGradient(W/2,H/2,H*.25,W/2,H/2,H*.95);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,.55)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  // лёгкая дымка у поля
+  ctx.fillStyle='rgba(120,160,255,.03)';ctx.fillRect(0,H*.4,W,H*.3);
+}
 
-        function showScreen(screen) {
-            currentScreen = screen;
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(`screen-${screen}`).classList.add('active');
+function drawStandQuad(){} // placeholder for roof (unused)
 
-            const titles = {
-                'stadium-select': '⚽ Выбор стадиона',
-                'stadium-map': `🏟️ ${selectedStadium?.name || 'Стадион'}`,
-                'seat-select': '💺 Выбор места',
-                'preview': '👁️ Вид с места'
-            };
+function updateStats(dist,height){
+  const row=S.row, std=S.stand;
+  const d=Math.round(dist);
+  const quality = row<=5?'Близко к полю':row<=18?'Идеальный обзор':row<=30?'Панорама':'Высоко';
+  const ang = (std.side==='E'||std.side==='W')?'За воротами':
+              (std.side.includes('N')||std.side.includes('S'))?'Сбоку вдоль поля':'Угловой';
+  document.getElementById('vstats').innerHTML=`
+    <div class="vstat"><div class="l">До поля</div><div class="v">${d} м</div></div>
+    <div class="vstat"><div class="l">Высота</div><div class="v">${Math.round(height)} м</div></div>
+    <div class="vstat"><div class="l">Ракурс</div><div class="v" style="font-size:10px">${ang}</div></div>
+    <div class="vstat"><div class="l">Обзор</div><div class="v" style="font-size:10px;color:var(--acc)">${quality}</div></div>`;
+  document.getElementById('rowQuality').textContent=quality;
+  document.getElementById('rowNow').textContent=row;
+}
 
-            document.getElementById('headerTitle').textContent = titles[screen];
-            document.getElementById('backBtn').style.display = screen === 'stadium-select' ? 'none' : 'flex';
-        }
+/* ============================================================
+   СХЕМА СТАДИОНА (SVG) — уникальная для каждой арены
+============================================================ */
+function renderMap(){
+  const st=S.stad, svg=document.getElementById('svgmap');
+  document.getElementById('stName').textContent=st.name;
+  document.getElementById('stCap').textContent=st.cap.toLocaleString('ru')+' мест';
+  const W=640,H=460,cx=W/2,cy=H/2;
+  const fw=300,fh=170; // поле на схеме
+  let html='';
+  // внешняя чаша
+  html+=`<defs>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a8c46"/><stop offset="1" stop-color="#1c6b34"/></linearGradient>
+    <radialGradient id="bowl"><stop offset="0" stop-color="#1a2340"/><stop offset="1" stop-color="#0c1120"/></radialGradient>
+  </defs>`;
+  html+=`<rect x="20" y="20" width="${W-40}" height="${H-40}" rx="60" fill="url(#bowl)" stroke="rgba(120,140,255,.15)"/>`;
+  // поле
+  html+=`<rect x="${cx-fw/2}" y="${cy-fh/2}" width="${fw}" height="${fh}" rx="6" fill="url(#field)"/>`;
+  html+=`<rect x="${cx-fw/2+8}" y="${cy-fh/2+8}" width="${fw-16}" height="${fh-16}" rx="3" fill="none" stroke="rgba(255,255,255,.5)"/>`;
+  html+=`<line x1="${cx}" y1="${cy-fh/2+8}" x2="${cx}" y2="${cy+fh/2-8}" stroke="rgba(255,255,255,.5)"/>`;
+  html+=`<circle cx="${cx}" cy="${cy}" r="20" fill="none" stroke="rgba(255,255,255,.5)"/>`;
 
-        function goBack() {
-            const flow = ['stadium-select', 'stadium-map', 'seat-select', 'preview'];
-            const idx = flow.indexOf(currentScreen);
-            
-            if (idx > 0) {
-                const prevScreen = flow[idx - 1];
-                
-                if (currentScreen === 'preview') {
-                    selectedSeat = null;
-                } else if (currentScreen === 'seat-select') {
-                    selectedSection = null;
-                } else if (currentScreen === 'stadium-map') {
-                    selectedStadium = null;
-                }
+  // трибуны по сторонам
+  const layout={
+    N:{x:cx-fw/2-30,y:34, w:fw+60,h:52, horiz:true},
+    S:{x:cx-fw/2-30,y:H-86,w:fw+60,h:52, horiz:true},
+    W:{x:34,        y:cy-fh/2-20,w:52,h:fh+40,horiz:false},
+    E:{x:W-86,      y:cy-fh/2-20,w:52,h:fh+40,horiz:false},
+    NW:{x:44,y:44,w:70,h:44,horiz:true}, NE:{x:W-114,y:44,w:70,h:44,horiz:true},
+    SW:{x:44,y:H-88,w:70,h:44,horiz:true},SE:{x:W-114,y:H-88,w:70,h:44,horiz:true},
+  };
+  st.stands.forEach(std=>{
+    const L=layout[std.side]; if(!L)return;
+    const n=std.sec, col=CAT[std.cat].c;
+    const gapPx=3;
+    for(let i=0;i<n;i++){
+      let x,y,w,h;
+      if(L.horiz){ w=(L.w-(n-1)*gapPx)/n; h=L.h; x=L.x+i*(w+gapPx); y=L.y; }
+      else { h=(L.h-(n-1)*gapPx)/n; w=L.w; x=L.x; y=L.y+i*(h+gapPx); }
+      const sid=std.id+'-'+(i+1);
+      const sold=std.soldSecs&&std.soldSecs.includes(i);
+      html+=`<g class="sec ${sold?'dis':''} ${S.section&&S.section.id===sid?'sel':''}" data-sid="${sid}" onclick="pickSection('${std.id}',${i},'${sid}')">
+        <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${sold?'#2a2f42':col}" fill-opacity="${sold?.6:.85}" stroke="rgba(255,255,255,.2)"/>
+        ${(w>16&&h>14)?`<text class="seclbl" x="${x+w/2}" y="${y+h/2+3}">${i+1}</text>`:''}
+      </g>`;
+    }
+    // подпись трибуны
+    const lx=L.horiz?L.x+L.w/2:L.x+L.w/2, ly=L.horiz?(std.side==='N'?L.y-8:L.y+L.h+14):L.y-8;
+    html+=`<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10" font-weight="800" fill="#8690ad">${std.name}</text>`;
+  });
+  svg.innerHTML=html;
+}
 
-                showScreen(prevScreen);
-                
-                if (prevScreen === 'stadium-select') {
-                    renderStadiumCards();
-                } else if (prevScreen === 'stadium-map') {
-                    renderStadiumMap();
-                } else if (prevScreen === 'seat-select') {
-                    renderSeatGrid();
-                }
-                
-                updateBottomBar();
-            }
-        }
+/* предзаполним "проданные" секторы для реалистичности */
+Object.values(STADIUMS).forEach(st=>st.stands.forEach(std=>{
+  std.soldSecs=[]; const n=Math.floor(std.sec*Math.random()*0.3);
+  for(let i=0;i<n;i++)std.soldSecs.push((Math.random()*std.sec)|0);
+}));
 
-        function nextScreen() {
-            if (currentScreen === 'stadium-select' && selectedStadium) {
-                showScreen('stadium-map');
-                renderStadiumMap();
-            } else if (currentScreen === 'stadium-map' && selectedSection) {
-                selectSection();
-            } else if (currentScreen === 'seat-select' && selectedSeat) {
-                showPreview();
-            } else if (currentScreen === 'preview') {
-                showToast('Переход к оформлению билета 🎫');
-            }
-            updateBottomBar();
-        }
+/* ============================================================
+   UI: матчи
+============================================================ */
+const LEAGUES={all:'Все',rpl:'РПЛ',cup:'Кубок',};
+function renderChips(){
+  document.getElementById('chips').innerHTML=Object.entries(LEAGUES).map(([k,v])=>
+    `<div class="chip ${S.filter===k?'on':''}" onclick="setFilter('${k}')">${v}</div>`).join('');
+}
+function setFilter(f){S.filter=f;renderChips();renderMatches();hapt('light');}
+function renderMatches(){
+  const q=(document.getElementById('q').value||'').toLowerCase();
+  let list=MATCHES.filter(m=>{
+    if(S.filter==='rpl'&&!m.lg.includes('РПЛ'))return false;
+    if(S.filter==='cup'&&!m.lg.includes('Кубок'))return false;
+    if(q){const st=STADIUMS[m.stad];
+      return (m.home+m.away+st.name+st.city).toLowerCase().includes(q);}
+    return true;});
+  document.getElementById('mlist').innerHTML=list.map(m=>{
+    const st=STADIUMS[m.stad];
+    const min=Math.min(...st.stands.map(s=>s.price));
+    return `<div class="mcard" onclick="openMatch(${m.id})">
+      ${m.hot?'<div class="hot">🔥 ХИТ</div>':''}
+      <div class="mlg"><div class="lg">${m.lg}</div><div class="dt">${m.dow}, ${m.date} • ${m.time}</div></div>
+      <div class="teams">
+        <div class="tm"><div class="crest" style="background:linear-gradient(135deg,${m.hc},${m.hc}bb)">${m.hi}</div>
+          <div><div class="tname">${m.home}</div><div class="tsub">Хозяева</div></div></div>
+        <div class="vs">VS</div>
+        <div class="tm away"><div class="crest" style="background:linear-gradient(135deg,${m.ac},${m.ac}bb)">${m.ai}</div>
+          <div><div class="tname">${m.away}</div><div class="tsub">Гости</div></div></div>
+      </div>
+      <div class="mfoot"><div class="st">📍 ${st.name}, ${st.city}</div><div class="pr">от ${min.toLocaleString('ru')} ₽</div></div>
+    </div>`}).join('')||'<div style="text-align:center;padding:40px;color:var(--mut)">Ничего не найдено 😔</div>';
+}
 
-        function updateBottomBar() {
-            const bottomBar = document.getElementById('bottomBar');
-            const btn = document.getElementById('bottomBtn');
-            const price = document.getElementById('bottomPrice');
-            const label = document.getElementById('bottomLabel');
+function openMatch(id){
+  S.match=MATCHES.find(m=>m.id===id); S.stad=STADIUMS[S.match.stad];
+  S.stand=null;S.section=null;S.seat=null;
+  go('stadium'); renderMap(); renderZones();
+  document.getElementById('seatpanel').classList.remove('on');
+  hapt('medium');
+}
 
-            if (currentScreen === 'stadium-select') {
-                bottomBar.style.display = 'none';
-                return;
-            }
+function renderZones(){
+  document.getElementById('zones').innerHTML=S.stad.stands.map(std=>{
+    const free=std.sec-(std.soldSecs?std.soldSecs.length:0);
+    return `<div class="zcard ${S.stand&&S.stand.id===std.id?'on':''}" onclick="focusStand('${std.id}')">
+      <div class="zn" style="color:${CAT[std.cat].c}">${std.name}</div>
+      <div class="zp">от ${std.price.toLocaleString('ru')} ₽</div>
+      <div class="zs">${free} секторов свободно • ${std.rows} рядов</div></div>`}).join('');
+}
+function focusStand(id){
+  const std=S.stad.stands.find(s=>s.id===id); S.stand=std; renderZones();
+  toast('Выберите сектор на схеме 👆');
+  const el=document.querySelector(`.sec[data-sid^="${id}-"]`);
+  hapt('light');
+}
 
-            bottomBar.style.display = 'flex';
+/* ============================================================
+   ВЫБОР СЕКТОРА → МЕСТА
+============================================================ */
+function pickSection(stdId,idx,sid){
+  const std=S.stad.stands.find(s=>s.id===stdId);
+  if(std.soldSecs&&std.soldSecs.includes(idx)){toast('Сектор распродан 😔');hapt('heavy');return;}
+  S.stand=std; S.section={id:sid,idx}; S.seat=null;
+  renderMap(); renderZones(); renderSeats();
+  document.getElementById('seatpanel').classList.add('on');
+  document.getElementById('seatpanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+  hapt('medium');
+}
+function renderSeats(){
+  const std=S.stand, sec=S.section;
+  document.getElementById('spTitle').textContent='Сектор '+sec.id;
+  document.getElementById('spSub').textContent=CAT[std.cat].n+' • '+std.price.toLocaleString('ru')+' ₽';
+  const rows=Math.min(std.rows,26), seats=Math.min(std.seats,16);
+  let html='';
+  for(let r=1;r<=rows;r++){
+    html+=`<div class="srow"><span class="rlab">${r}</span>`;
+    for(let n=1;n<=seats;n++){
+      const sold=Math.random()<0.22; // детерминированно ниже
+      html+=`<div class="seat" data-r="${r}" data-n="${n}">${n}</div>`;
+    }
+    html+=`<span class="rlab">${r}</span></div>`;
+  }
+  const g=document.getElementById('seatgrid'); g.innerHTML=html;
+  // пометить занятые стабильно (seed по сектору)
+  let seed=(sec.idx+1)*97+std.rows;
+  const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  g.querySelectorAll('.seat').forEach(el=>{
+    const r=+el.dataset.r,n=+el.dataset.n;
+    if(rnd()<0.2)el.classList.add('so');
+    else el.classList.add(std.cat==='vip'?'vip':'av');
+    el.onclick=()=>{ if(el.classList.contains('so'))return; pickSeat(r,n,el); };
+  });
+}
+function pickSeat(r,n,el){
+  document.querySelectorAll('.seat.sel').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  S.seat={row:r,n}; S.row=r;
+  updateBar(); hapt('light');
+  toast(`Ряд ${r}, место ${n} — нажмите «Смотреть вид»`);
+}
 
-            switch (currentScreen) {
-                case 'stadium-map':
-                    if (selectedSection) {
-                        btn.disabled = false;
-                        btn.textContent = 'Выбрать места →';
-                        price.textContent = selectedSection.price.toLocaleString() + ' ₽';
-                        label.textContent = selectedSection.name;
-                    } else {
-                        btn.disabled = true;
-                        btn.textContent = 'Выберите сектор';
-                        price.textContent = 'от 2 500 ₽';
-                        label.textContent = selectedStadium?.name || '';
-                    }
-                    break;
+/* ============================================================
+   3D-ВИД: инициализация, свайп, слайдер ряда
+============================================================ */
+function openView(){
+  if(!S.seat){toast('Сначала выберите место');return;}
+  go('view');
+  const cv=document.getElementById('view3d');
+  document.getElementById('rowSlider').max=Math.min(S.stand.rows,40);
+  onRow(S.seat.row,true);
+  document.getElementById('vbadge').innerHTML=`Сектор <span>${S.section.id}</span> • Ряд <span id="vRow">${S.row}</span> • Место <span>${S.seat.n}</span>`;
+  document.getElementById('iSec').textContent=S.section.id;
+  document.getElementById('iCat').textContent=CAT[S.stand.cat].n;
+  bindDrag(cv);
+  setTimeout(()=>document.getElementById('vhint').style.opacity=0,3500);
+  renderView();
+  updateBar();
+}
+function onRow(v,silent){
+  S.row=+v; S.yaw=0;S.pitch=0;
+  const sl=document.getElementById('rowSlider');
+  sl.style.setProperty('--fill',((v-sl.min)/(sl.max-sl.min)*100)+'%');
+  document.getElementById('rowNow').textContent=v;
+  const vr=document.getElementById('vRow'); if(vr)vr.textContent=v;
+  document.getElementById('iRow').textContent='Ряд '+v+' / Место '+(S.seat?S.seat.n:'—');
+  renderView(); updateBar();
+  if(!silent)hapt('light');
+}
+function bindDrag(cv){
+  let drag=false,lx=0,ly=0;
+  const down=(x,y)=>{drag=true;lx=x;ly=y;document.getElementById('vhint').style.opacity=0;};
+  const move=(x,y)=>{if(!drag)return;S.yaw+=(x-lx)*0.004;S.pitch=Math.max(-.35,Math.min(.35,S.pitch+(y-ly)*0.003));
+    S.yaw=Math.max(-.9,Math.min(.9,S.yaw));lx=x;ly=y;renderView();};
+  const up=()=>drag=false;
+  cv.onpointerdown=e=>down(e.clientX,e.clientY);
+  cv.onpointermove=e=>move(e.clientX,e.clientY);
+  window.onpointerup=up;
+}
 
-                case 'seat-select':
-                    if (selectedSeat) {
-                        btn.disabled = false;
-                        btn.textContent = 'Посмотреть вид →';
-                        price.textContent = selectedSection.price.toLocaleString() + ' ₽';
-                        label.textContent = `Ряд ${selectedSeat.row}, Место ${selectedSeat.seat}`;
-                    } else {
-                        btn.disabled = true;
-                        btn.textContent = 'Выберите место';
-                        price.textContent = selectedSection.price.toLocaleString() + ' ₽';
-                        label.textContent = selectedSection.name;
-                    }
-                    break;
+/* ============================================================
+   ПОКУПКА
+============================================================ */
+function openBuy(){
+  go('buy');
+  const m=S.match,st=S.stad,std=S.stand;
+  document.getElementById('buyMatch').textContent=`${m.home} — ${m.away}`;
+  document.getElementById('bDate').textContent=m.date+' 2026';
+  document.getElementById('bTime').textContent=m.time;
+  document.getElementById('bStad').textContent=st.name;
+  document.getElementById('bSeat').textContent=`${S.section.id} / Р${S.row} / М${S.seat.n}`;
+  recalc(); updateBar();
+}
+function recalc(){
+  const base=S.stand.price + (S.row<=3?800:0);
+  const serv=Math.round(base*.1);
+  let tot=base+serv, disc=0;
+  if(S.promo){disc=Math.round(tot*.15);tot-=disc;}
+  document.getElementById('pTick').textContent=base.toLocaleString('ru')+' ₽';
+  document.getElementById('pServ').textContent=serv.toLocaleString('ru')+' ₽';
+  document.getElementById('pDiscRow').style.display=S.promo?'flex':'none';
+  if(S.promo)document.getElementById('pDisc').textContent='−'+disc.toLocaleString('ru')+' ₽';
+  document.getElementById('pTot').textContent=tot.toLocaleString('ru')+' ₽';
+  S.total=tot;
+}
+function applyPromo(){
+  const c=document.getElementById('promo').value.trim().toUpperCase();
+  if(c==='ФУТБОЛ2026'||c==='FOOTBALL2026'){S.promo=true;recalc();toast('Промокод применён −15% 🎉');hapt('medium');}
+  else toast('Промокод не найден');
+}
+function pay(){
+  const fio=document.getElementById('fio').value.trim(),mail=document.getElementById('mail').value.trim();
+  if(!fio||!mail){toast('Заполните имя и email');return;}
+  showLoad(true);
+  setTimeout(()=>{ // имитация оплаты через Telegram Payments
+    showLoad(false);
+    go('ok');
+    document.getElementById('ord').textContent=Math.floor(100000+Math.random()*900000);
+    document.getElementById('bar').classList.remove('on');
+    tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred('success');
+  },1600);
+}
 
-                case 'preview':
-                    btn.disabled = false;
-                    btn.textContent = 'Купить билет →';
-                    price.textContent = selectedSection.price.toLocaleString() + ' ₽';
-                    label.textContent = 'Итого';
-                    break;
-            }
-        }
+/* ============================================================
+   НАВИГАЦИЯ
+============================================================ */
+const TITLES={matches:'⚽ Матчи РПЛ',stadium:'🏟️ Схема стадиона',view:'👁️ Вид с места',buy:'🎫 Оформление',ok:''};
+const STEPS={matches:'',stadium:'Шаг 1 из 3',view:'Шаг 2 из 3',buy:'Шаг 3 из 3',ok:''};
+const FLOW=['matches','stadium','view','buy'];
+function go(s){
+  S.screen=s;
+  document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
+  document.getElementById('s-'+s).classList.add('on');
+  document.getElementById('htitle').textContent=TITLES[s];
+  document.getElementById('hstep').textContent=STEPS[s];
+  document.getElementById('back').style.display=(s==='matches'||s==='ok')?'none':'flex';
+  document.getElementById('bar').classList.toggle('on',s!=='matches'&&s!=='ok');
+  window.scrollTo(0,0); updateBar();
+}
+function back(){const i=FLOW.indexOf(S.screen);if(i>0)go(FLOW[i-1]);if(S.screen==='stadium'){renderMap();}}
+function home(){S={...S,match:null,stad:null,stand:null,section:null,seat:null,promo:false,yaw:0,pitch:0};
+  document.getElementById('bar').classList.remove('on');go('matches');renderMatches();}
+function next(){
+  if(S.screen==='stadium'){ if(!S.seat){toast('Выберите сектор и место');return;} openView(); }
+  else if(S.screen==='view') openBuy();
+  else if(S.screen==='buy') pay();
+}
+function updateBar(){
+  const btn=document.getElementById('bBtn'),pr=document.getElementById('bPrice'),lb=document.getElementById('bLabel');
+  if(S.screen==='stadium'){
+    btn.textContent=S.seat?'Смотреть вид с места →':'Выберите место';btn.disabled=!S.seat;
+    if(S.seat){pr.textContent=S.stand.price.toLocaleString('ru')+' ₽';lb.textContent=`Сектор ${S.section.id} • Ряд ${S.seat.row} • Место ${S.seat.n}`;}
+    else if(S.stand){pr.textContent='от '+S.stand.price.toLocaleString('ru')+' ₽';lb.textContent=S.stand.name;}
+    else{const min=Math.min(...S.stad.stands.map(s=>s.price));pr.textContent='от '+min.toLocaleString('ru')+' ₽';lb.textContent=S.stad.name;}
+  } else if(S.screen==='view'){
+    btn.disabled=false;btn.textContent='Купить билет →';btn.className='btn gr';
+    pr.textContent=S.stand.price.toLocaleString('ru')+' ₽';lb.textContent=`Сектор ${S.section.id} • Ряд ${S.row} • Место ${S.seat.n}`;
+  } else if(S.screen==='buy'){
+    btn.disabled=false;btn.textContent='💳 Оплатить';btn.className='btn gr';
+    pr.textContent=(S.total||0).toLocaleString('ru')+' ₽';lb.textContent='Итого к оплате';
+  } else btn.className='btn';
+}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2200);}
+function showLoad(v){document.getElementById('load').classList.toggle('on',v);}
 
-        function zoomIn() {
-            mapScale = Math.min(mapScale * 1.2, 3);
-            updateMapTransform();
-        }
-
-        function zoomOut() {
-            mapScale = Math.max(mapScale / 1.2, 1);
-            updateMapTransform();
-        }
-
-        function resetZoom() {
-            mapScale = 1;
-            mapTranslateX = 0;
-            mapTranslateY = 0;
-            updateMapTransform();
-        }
-
-        function updateMapTransform() {
-            const svg = document.getElementById('stadiumSvg');
-            svg.style.transform = `scale(${mapScale}) translate(${mapTranslateX}px, ${mapTranslateY}px)`;
-        }
-
-        function rotateView() {
-            const viewport = document.getElementById('previewViewport');
-            viewport.style.transform = 'scale(1.05) rotate(5deg)';
-            setTimeout(() => viewport.style.transform = '', 500);
-            showToast('Панорамный вид 🔄');
-        }
-
-        function toggle360() {
-            showToast('360° режим скоро будет доступен! 🎥');
-        }
-
-        function shareView() {
-            if (tg?.switchInlineQuery) {
-                tg.switchInlineQuery(`Смотри какой вид с моего места на ${selectedStadium?.name}!`);
-            }
-            showToast('Ссылка скопирована! 📤');
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2500);
-        }
-
-        // Touch/pan support for map
-        let isDragging = false;
-        let startX, startY;
-
-        const mapContainer = document.getElementById('mapContainer');
-        
-        mapContainer.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX - mapTranslateX;
-            startY = e.clientY - mapTranslateY;
-        });
-
-        mapContainer.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            mapTranslateX = (e.clientX - startX) / mapScale;
-            mapTranslateY = (e.clientY - startY) / mapScale;
-            updateMapTransform();
-        });
-
-        mapContainer.addEventListener('mouseup', () => isDragging = false);
-        mapContainer.addEventListener('mouseleave', () => isDragging = false);
-
-        // Initialize
-        renderStadiumCards();
-        updateBottomBar();
-    </script>
+/* ============================================================
+   INIT
+============================================================ */
+renderChips(); renderMatches();
+window.addEventListener('resize',()=>{if(S.screen==='view')renderView();});
+</script>
 </body>
 </html>
