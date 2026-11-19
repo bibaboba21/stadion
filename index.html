@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ФутболБилеты</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        :root {
+            --primary: #6c5ce7;
+            --primary-light: #a29bfe;
+            --accent: #00b894;
+            --danger: #e74c3c;
+            --bg-dark: #0a0a0f;
+            --bg-card: #1a1a2e;
+            --bg-card-hover: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --gradient-1: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            --gradient-2: linear-gradient(135deg, #00b894, #00cec9);
+            --gradient-3: linear-gradient(135deg, #fd79a8, #e84393);
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(108, 92, 231, 0.2);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(108, 92, 231, 0.2);
+            border: none;
+            color: var(--primary-light);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .back-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            padding: 16px;
+            padding-bottom: 100px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Matches Screen */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 8px 0 16px;
+            scrollbar-width: none;
+        }
+
+        .filter-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: var(--bg-card);
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            color: var(--text-secondary);
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-tab.active {
+            background: var(--gradient-1);
+            color: white;
+            border-color: transparent;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .match-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(108, 92, 231, 0.15);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .match-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .match-card:active::before {
+            opacity: 1;
+        }
+
+        .match-card:active {
+            transform: scale(0.98);
+            border-color: var(--primary);
+        }
+
+        .match-league {
+            font-size: 11px;
+            color: var(--primary-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .match-teams {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .team-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .team-name {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .match-vs {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 12px;
+        }
+
+        .match-time {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        .match-date {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .match-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .match-stadium {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .match-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        /* Stadium Map Screen */
+        .stadium-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stadium-map {
+            width: 100%;
+            aspect-ratio: 1.5;
+            position: relative;
+            background: radial-gradient(ellipse at center, #1a472a 0%, #0d2818 100%);
+            border-radius: 50% / 40%;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255,255,255,0.1);
+        }
+
+        .field {
+            width: 60%;
+            height: 50%;
+            background: linear-gradient(180deg, #2d8a4e, #1a5c32);
+            border-radius: 4px;
+            border: 2px solid rgba(255,255,255,0.3);
+            position: relative;
+        }
+
+        .field::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255,255,255,0.5);
+        }
+
+        .field::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+        }
+
+        .section {
+            position: absolute;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .section:active {
+            transform: scale(1.1);
+        }
+
+        .section.available {
+            background: rgba(108, 92, 231, 0.7);
+            border: 1px solid var(--primary-light);
+        }
+
+        .section.selected {
+            background: var(--gradient-2) !important;
+            border: 2px solid #00b894 !important;
+            box-shadow: 0 0 15px rgba(0, 184, 148, 0.5);
+        }
+
+        .section.sold {
+            background: rgba(100, 100, 100, 0.3);
+            border: 1px solid rgba(100, 100, 100, 0.3);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .section-top {
+            top: 5%;
+            left: 20%;
+            right: 20%;
+            height: 12%;
+        }
+
+        .section-bottom {
+            bottom: 5%;
+            left: 20%;
+            right: 20%;
+            height: 12%;
+        }
+
+        .section-left {
+            left: 3%;
+            top: 20%;
+            bottom: 20%;
+            width: 15%;
+            writing-mode: vertical-lr;
+        }
+
+        .section-right {
+            right: 3%;
+            top: 20%;
+            bottom: 20%;
+            width: 15%;
+            writing-mode: vertical-lr;
+        }
+
+        .section-corner-tl {
+            top: 8%;
+            left: 5%;
+            width: 18%;
+            height: 18%;
+            border-radius: 8px;
+        }
+
+        .section-corner-tr {
+            top: 8%;
+            right: 5%;
+            width: 18%;
+            height: 18%;
+            border-radius: 8px;
+        }
+
+        .section-corner-bl {
+            bottom: 8%;
+            left: 5%;
+            width: 18%;
+            height: 18%;
+            border-radius: 8px;
+        }
+
+        .section-corner-br {
+            bottom: 8%;
+            right: 5%;
+            width: 18%;
+            height: 18%;
+            border-radius: 8px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-dot.available { background: var(--primary); }
+        .legend-dot.selected { background: var(--accent); }
+        .legend-dot.sold { background: #555; }
+
+        /* Seat Selection */
+        .seat-grid {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .seat-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .seat-row-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            width: 20px;
+            text-align: center;
+        }
+
+        .seat {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .seat.available {
+            background: rgba(108, 92, 231, 0.4);
+            border-color: rgba(108, 92, 231, 0.6);
+        }
+
+        .seat.selected {
+            background: var(--accent);
+            border-color: #00b894;
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 10px rgba(0, 184, 148, 0.5);
+        }
+
+        .seat.sold {
+            background: rgba(100, 100, 100, 0.2);
+            cursor: not-allowed;
+        }
+
+        .seat:active:not(.sold) {
+            transform: scale(1.2);
+        }
+
+        /* Seat Preview (3D View) */
+        .preview-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .preview-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .preview-360 {
+            font-size: 11px;
+            color: var(--accent);
+            background: rgba(0, 184, 148, 0.15);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(180deg, #1a2332 0%, #2d4a3e 40%, #1a5c32 60%, #0d2818 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-image::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, transparent, rgba(0, 184, 148, 0.1));
+        }
+
+        .preview-field-lines {
+            position: absolute;
+            bottom: 10%;
+            left: 10%;
+            right: 10%;
+            height: 60%;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-bottom: none;
+            perspective: 500px;
+            transform: rotateX(45deg);
+        }
+
+        .preview-crowd {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(180deg, rgba(108, 92, 231, 0.3), transparent);
+        }
+
+        .preview-overlay {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .preview-stat {
+            background: rgba(0,0,0,0.7);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+        }
+
+        .preview-stat-label {
+            color: var(--text-secondary);
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .preview-stat-value {
+            font-weight: 700;
+            color: white;
+        }
+
+        .preview-controls {
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .preview-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            background: rgba(108, 92, 231, 0.1);
+            color: var(--primary-light);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .preview-btn:active {
+            background: rgba(108, 92, 231, 0.3);
+        }
+
+        /* Purchase Screen */
+        .ticket-summary {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(108, 92, 231, 0.2);
+        }
+
+        .ticket-summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+        }
+
+        .ticket-match {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .ticket-badge {
+            background: var(--gradient-1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .ticket-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .ticket-detail {
+            background: rgba(255,255,255,0.03);
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .ticket-detail-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .ticket-detail-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .ticket-price-breakdown {
+            border-top: 1px dashed rgba(255,255,255,0.1);
+            padding-top: 16px;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .price-row.total {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Bottom Action Bar */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            padding: 16px 20px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            border-top: 1px solid rgba(108, 92, 231, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .bottom-bar-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .bottom-bar-info span {
+            display: block;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .btn-primary {
+            padding: 14px 32px;
+            border-radius: 12px;
+            border: none;
+            background: var(--gradient-1);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Success Screen */
+        .success-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--gradient-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin-bottom: 24px;
+            animation: bounceIn 0.6s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .success-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            background: white;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            padding: 16px;
+        }
+
+        .qr-placeholder {
+            width: 100%;
+            height: 100%;
+            background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 12px 12px;
+            border-radius: 8px;
+        }
+
+        .ticket-qr-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: var(--bg-card);
+            border: 1px solid var(--primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 13px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Seat count indicator */
+        .seat-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--accent);
+            color: #000;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* Pulse animation for available sections */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(108, 92, 231, 0); }
+        }
+
+        .section.available:hover {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Promo badge */
+        .promo-banner {
+            background: linear-gradient(135deg, rgba(108, 92, 231, 0.15), rgba(0, 184, 148, 0.15));
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .promo-icon {
+            font-size: 24px;
+        }
+
+        .promo-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .promo-text strong {
+            color: var(--primary-light);
+        }
+
+        /* Search */
+        .search-container {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border-radius: 12px;
+            border: 1px solid rgba(108, 92, 231, 0.2);
+            background: var(--bg-card);
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            opacity: 0.5;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Header -->
+    <div class="header" id="header">
+        <button class="back-btn" id="backBtn" style="display:none;" onclick="goBack()">←</button>
+        <div class="header-title" id="headerTitle">⚽ ФутболБилеты</div>
+        <div style="width: 36px;"></div>
+    </div>
+
+    <!-- Screen 1: Match List -->
+    <div class="screen active" id="screen-matches">
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Поиск команды или стадиона..." id="searchInput" oninput="filterMatches()">
+        </div>
+
+        <div class="promo-banner">
+            <span class="promo-icon">🎉</span>
+            <div class="promo-text">
+                <strong>Скидка 15%</strong> на первый заказ по промокоду <strong>ФУТБОЛ2026</strong>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <div class="filter-tab active" onclick="filterByLeague('all')">Все матчи</div>
+            <div class="filter-tab" onclick="filterByLeague('rpl')">РПЛ</div>
+            <div class="filter-tab" onclick="filterByLeague('cup')">Кубок России</div>
+            <div class="filter-tab" onclick="filterByLeague('friendly')">Товарищеские</div>
+        </div>
+
+        <div class="section-title">Ближайшие матчи</div>
+        <div id="matchesList"></div>
+    </div>
+
+    <!-- Screen 2: Stadium Section Selection -->
+    <div class="screen" id="screen-stadium">
+        <div class="stadium-container">
+            <div class="section-title" style="text-align: center;">Выберите сектор</div>
+            <div class="stadium-map" id="stadiumMap">
+                <div class="field"></div>
+                <!-- Sections will be rendered by JS -->
+            </div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot available"></div>Доступно</div>
+                <div class="legend-item"><div class="legend-dot selected"></div>Выбрано</div>
+                <div class="legend-item"><div class="legend-dot sold"></div>Продано</div>
+            </div>
+        </div>
+
+        <div class="seat-grid" id="sectionDetails" style="display:none;">
+            <div class="section-title" id="sectionTitle">Сектор A — Ряды</div>
+            <div id="seatRows"></div>
+        </div>
+    </div>
+
+    <!-- Screen 3: Seat Preview (View from seat) -->
+    <div class="screen" id="screen-preview">
+        <div class="preview-container">
+            <div class="preview-header">
+                <div class="preview-title" id="previewSeatInfo">Сектор A, Ряд 5, Место 12</div>
+                <div class="preview-360">360°</div>
+            </div>
+            <div class="preview-image" id="previewImage">
+                <div class="preview-crowd"></div>
+                <div class="preview-field-lines"></div>
+                <div class="preview-overlay">
+                    <div class="preview-stat">
+                        <div class="preview-stat-label">До поля</div>
+                        <div class="preview-stat-value">15м</div>
+                    </div>
+                    <div class="preview-stat">
+                        <div class="preview-stat-label">Обзор</div>
+                        <div class="preview-stat-value">Отличный</div>
+                    </div>
+                </div>
+            </div>
+            <div class="preview-controls">
+                <button class="preview-btn" onclick="rotateView()">🔄 Панорама</button>
+                <button class="preview-btn" onclick="toggleAR()">📱 AR режим</button>
+                <button class="preview-btn" onclick="shareView()">📤 Поделиться</button>
+            </div>
+        </div>
+
+        <div class="ticket-summary">
+            <div class="section-title">Информация о месте</div>
+            <div class="ticket-details">
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Сектор</div>
+                    <div class="ticket-detail-value" id="infoSector">A</div>
+                </div>
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Ряд</div>
+                    <div class="ticket-detail-value" id="infoRow">5</div>
+                </div>
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Место</div>
+                    <div class="ticket-detail-value" id="infoSeat">12</div>
+                </div>
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Категория</div>
+                    <div class="ticket-detail-value" id="infoCategory">VIP</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 4: Purchase -->
+    <div class="screen" id="screen-purchase">
+        <div class="ticket-summary">
+            <div class="ticket-summary-header">
+                <div class="ticket-match" id="purchaseMatch">Спартак — ЦСКА</div>
+                <div class="ticket-badge" id="purchaseLeague">РПЛ</div>
+            </div>
+            <div class="ticket-details">
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Дата</div>
+                    <div class="ticket-detail-value" id="purchaseDate">25 ноя 2026</div>
+                </div>
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Время</div>
+                    <div class="ticket-detail-value" id="purchaseTime">19:30</div>
+                </div>
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Стадион</div>
+                    <div class="ticket-detail-value" id="purchaseStadium">Открытие Арена</div>
+                </div>
+                <div class="ticket-detail">
+                    <div class="ticket-detail-label">Место</div>
+                    <div class="ticket-detail-value" id="purchaseSeat">A-5-12</div>
+                </div>
+            </div>
+            <div class="ticket-price-breakdown">
+                <div class="price-row">
+                    <span>Стоимость билета</span>
+                    <span id="priceTicket">3 500 ₽</span>
+                </div>
+                <div class="price-row">
+                    <span>Сервисный сбор</span>
+                    <span id="priceService">350 ₽</span>
+                </div>
+                <div class="price-row" id="discountRow" style="display:none;">
+                    <span style="color: var(--accent);">Скидка</span>
+                    <span style="color: var(--accent);" id="priceDiscount">-578 ₽</span>
+                </div>
+                <div class="price-row total">
+                    <span>Итого</span>
+                    <span id="priceTotal">3 850 ₽</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Промокод</label>
+            <input type="text" class="form-input" placeholder="Введите промокод" id="promoInput" oninput="applyPromo()">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Имя и фамилия</label>
+            <input type="text" class="form-input" placeholder="Иван Иванов" id="nameInput">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Email для билета</label>
+            <input type="email" class="form-input" placeholder="example@mail.ru" id="emailInput">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Телефон</label>
+            <input type="tel" class="form-input" placeholder="+7 (999) 123-45-67" id="phoneInput">
+        </div>
+    </div>
+
+    <!-- Screen 5: Success -->
+    <div class="screen" id="screen-success">
+        <div class="success-container">
+            <div class="success-icon">✓</div>
+            <div class="success-title">Билет куплен! 🎉</div>
+            <div class="success-subtitle">
+                Электронный билет отправлен на вашу почту.<br>
+                Покажите QR-код на входе.
+            </div>
+            <div class="qr-code">
+                <div class="qr-placeholder"></div>
+            </div>
+            <div class="ticket-qr-info">
+                Заказ #<span id="orderNumber">284719</span><br>
+                Билет будет доступен в Telegram через минуту
+            </div>
+            <button class="btn-primary" onclick="goHome()">Вернуться к матчам</button>
+        </div>
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="bottom-bar" id="bottomBar">
+        <div class="bottom-bar-info">
+            <span id="bottomPrice">от 1 500 ₽</span>
+            <span id="bottomLabel">Выберите место</span>
+        </div>
+        <button class="btn-primary" id="bottomBtn" onclick="nextScreen()" disabled>
+            Выбрать место
+        </button>
+    </div>
+
+    <script>
+        // Telegram Web App Init
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // State
+        let currentScreen = 'matches';
+        let selectedMatch = null;
+        let selectedSection = null;
+        let selectedSeat = null;
+        let promoApplied = false;
+
+        // Match Data (Russian Premier League)
+        const matches = [
+            {
+                id: 1,
+                homeTeam: 'Спартак',
+                awayTeam: 'ЦСКА',
+                homeLogo: '🔴',
+                awayLogo: '🔵',
+                date: '25 ноя',
+                time: '19:30',
+                stadium: 'Открытие Арена',
+                league: 'rpl',
+                leagueName: 'РПЛ • Тур 16',
+                priceFrom: 2500,
+                city: 'Москва'
+            },
+            {
+                id: 2,
+                homeTeam: 'Зенит',
+                awayTeam: 'Локомотив',
+                homeLogo: '🔵',
+                awayLogo: '🟢',
+                date: '26 ноя',
+                time: '17:00',
+                stadium: 'Газпром Арена',
+                league: 'rpl',
+                leagueName: 'РПЛ • Тур 16',
+                priceFrom: 3000,
+                city: 'Санкт-Петербург'
+            },
+            {
+                id: 3,
+                homeTeam: 'Динамо',
+                awayTeam: 'Краснодар',
+                homeLogo: '⚪',
+                awayLogo: '🟡',
+                date: '27 ноя',
+                time: '20:00',
+                stadium: 'ВТБ Арена',
+                league: 'rpl',
+                leagueName: 'РПЛ • Тур 16',
+                priceFrom: 2000,
+                city: 'Москва'
+            },
+            {
+                id: 4,
+                homeTeam: 'Рубин',
+                awayTeam: 'Ростов',
+                homeLogo: '🟡',
+                awayLogo: '🟡',
+                date: '28 ноя',
+                time: '18:30',
+                stadium: 'Ак Барс Арена',
+                league: 'rpl',
+                leagueName: 'РПЛ • Тур 16',
+                priceFrom: 1500,
+                city: 'Казань'
+            },
+            {
+                id: 5,
+                homeTeam: 'Спартак',
+                awayTeam: 'Динамо',
+                homeLogo: '🔴',
+                awayLogo: '⚪',
+                date: '2 дек',
+                time: '19:45',
+                stadium: 'Открытие Арена',
+                league: 'cup',
+                leagueName: 'Кубок России • 1/4',
+                priceFrom: 3500,
+                city: 'Москва'
+            },
+            {
+                id: 6,
+                homeTeam: 'ЦСКА',
+                awayTeam: 'Зенит',
+                homeLogo: '🔵',
+                awayLogo: '🔵',
+                date: '3 дек',
+                time: '20:00',
+                stadium: 'ВЭБ Арена',
+                league: 'cup',
+                leagueName: 'Кубок России • 1/4',
+                priceFrom: 4000,
+                city: 'Москва'
+            }
+        ];
+
+        // Sections data
+        const sections = [
+            { id: 'A', name: 'Сектор A (VIP)', position: 'top', price: 5000, available: true, rows: 8, seats: 20 },
+            { id: 'B', name: 'Сектор B', position: 'corner-tr', price: 3000, available: true, rows: 10, seats: 15 },
+            { id: 'C', name: 'Сектор C', position: 'right', price: 2500, available: true, rows: 12, seats: 18 },
+            { id: 'D', name: 'Сектор D', position: 'corner-br', price: 3000, available: true, rows: 10, seats: 15 },
+            { id: 'E', name: 'Сектор E (За воротами)', position: 'bottom', price: 1500, available: true, rows: 15, seats: 20 },
+            { id: 'F', name: 'Сектор F', position: 'corner-bl', price: 2000, available: true, rows: 12, seats: 18 },
+            { id: 'G', name: 'Сектор G', position: 'left', price: 2500, available: false, rows: 12, seats: 18 },
+            { id: 'H', name: 'Сектор H', position: 'corner-tl', price: 3500, available: true, rows: 8, seats: 15 }
+        ];
+
+        // Render matches
+        function renderMatches(filter = 'all', search = '') {
+            const container = document.getElementById('matchesList');
+            let filtered = matches;
+
+            if (filter !== 'all') {
+                filtered = filtered.filter(m => m.league === filter);
+            }
+
+            if (search) {
+                const s = search.toLowerCase();
+                filtered = filtered.filter(m =>
+                    m.homeTeam.toLowerCase().includes(s) ||
+                    m.awayTeam.toLowerCase().includes(s) ||
+                    m.stadium.toLowerCase().includes(s) ||
+                    m.city.toLowerCase().includes(s)
+                );
+            }
+
+            container.innerHTML = filtered.map(match => `
+                <div class="match-card" onclick="selectMatch(${match.id})">
+                    <div class="match-league">${match.leagueName}</div>
+                    <div class="match-teams">
+                        <div class="team">
+                            <div class="team-logo">${match.homeLogo}</div>
+                            <div class="team-name">${match.homeTeam}</div>
+                        </div>
+                        <div class="match-vs">
+                            <div class="match-time">${match.time}</div>
+                            <div class="match-date">${match.date}</div>
+                        </div>
+                        <div class="team">
+                            <div class="team-logo">${match.awayLogo}</div>
+                            <div class="team-name">${match.awayTeam}</div>
+                        </div>
+                    </div>
+                    <div class="match-info">
+                        <div class="match-stadium">📍 ${match.stadium}, ${match.city}</div>
+                        <div class="match-price">от ${match.priceFrom.toLocaleString()} ₽</div>
+                    </div>
+                </div>
+            `).join('');
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Матчи не найдены 😔</div>';
+            }
+        }
+
+        // Select match
+        function selectMatch(id) {
+            selectedMatch = matches.find(m => m.id === id);
+            selectedSection = null;
+            selectedSeat = null;
+            showScreen('stadium');
+            renderStadium();
+            updateBottomBar();
+        }
+
+        // Render stadium map
+        function renderStadium() {
+            const map = document.getElementById('stadiumMap');
+            // Remove old sections
+            map.querySelectorAll('.section').forEach(s => s.remove());
+
+            sections.forEach(section => {
+                const div = document.createElement('div');
+                div.className = `section section-${section.position} ${section.available ? 'available' : 'sold'}`;
+                div.textContent = section.id;
+                div.onclick = () => selectSection(section);
+                map.appendChild(div);
+            });
+
+            document.getElementById('sectionDetails').style.display = 'none';
+        }
+
+        // Select section
+        function selectSection(section) {
+            if (!section.available) {
+                showToast('Сектор распродан 😔');
+                return;
+            }
+
+            selectedSection = section;
+            showScreen('stadium');
+            renderSeats(section);
+
+            // Highlight section
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('selected'));
+            document.querySelectorAll('.section').forEach(s => {
+                if (s.textContent === section.id) s.classList.add('selected');
+            });
+
+            updateBottomBar();
+        }
+
+        // Render seats for a section
+        function renderSeats(section) {
+            const container = document.getElementById('sectionDetails');
+            const rowsDiv = document.getElementById('seatRows');
+            container.style.display = 'block';
+            document.getElementById('sectionTitle').textContent = `${section.name} — Выберите место`;
+
+            let html = '';
+            for (let row = 1; row <= Math.min(section.rows, 10); row++) {
+                html += `<div class="seat-row"><span class="seat-row-label">Р${row}</span>`;
+                for (let seat = 1; seat <= Math.min(section.seats, 12); seat++) {
+                    const isSold = Math.random() < 0.3; // 30% sold
+                    const cls = isSold ? 'sold' : 'available';
+                    html += `<div class="seat ${cls}" onclick="selectSeat('${section.id}', ${row}, ${seat}, this)" data-row="${row}" data-seat="${seat}">${seat}</div>`;
+                }
+                html += `<span class="seat-row-label">Р${row}</span></div>`;
+            }
+            rowsDiv.innerHTML = html;
+        }
+
+        // Select seat
+        function selectSeat(section, row, seat, el) {
+            if (el.classList.contains('sold')) return;
+
+            // Deselect all
+            document.querySelectorAll('.seat').forEach(s => s.classList.remove('selected'));
+            el.classList.add('selected');
+
+            selectedSeat = { section, row, seat };
+            updateBottomBar();
+            showToast(`Выбрано: Сектор ${section}, Ряд ${row}, Место ${seat}`);
+        }
+
+        // Show seat preview
+        function showPreview() {
+            if (!selectedSeat) return;
+            showScreen('preview');
+
+            const { section, row, seat } = selectedSeat;
+            const sectionData = sections.find(s => s.id === section);
+
+            document.getElementById('previewSeatInfo').textContent = `Сектор ${section}, Ряд ${row}, Место ${seat}`;
+            document.getElementById('infoSector').textContent = section;
+            document.getElementById('infoRow').textContent = row;
+            document.getElementById('infoSeat').textContent = seat;
+            document.getElementById('infoCategory').textContent = section === 'A' ? 'VIP' : (row <= 5 ? 'Стандарт+' : 'Стандарт');
+
+            // Adjust preview based on row
+            const distance = 5 + row * 3;
+            const viewQuality = row <= 5 ? 'Превосходный' : (row <= 10 ? 'Отличный' : 'Хороший');
+
+            document.querySelector('.preview-overlay').innerHTML = `
+                <div class="preview-stat">
+                    <div class="preview-stat-label">До поля</div>
+                    <div class="preview-stat-value">${distance}м</div>
+                </div>
+                <div class="preview-stat">
+                    <div class="preview-stat-label">Обзор</div>
+                    <div class="preview-stat-value">${viewQuality}</div>
+                </div>
+            `;
+
+            updateBottomBar();
+        }
+
+        // Show purchase screen
+        function showPurchase() {
+            showScreen('purchase');
+
+            document.getElementById('purchaseMatch').textContent = `${selectedMatch.homeTeam} — ${selectedMatch.awayTeam}`;
+            document.getElementById('purchaseLeague').textContent = selectedMatch.league.toUpperCase();
+            document.getElementById('purchaseDate').textContent = selectedMatch.date + ' 2026';
+            document.getElementById('purchaseTime').textContent = selectedMatch.time;
+            document.getElementById('purchaseStadium').textContent = selectedMatch.stadium;
+            document.getElementById('purchaseSeat').textContent = `${selectedSeat.section}-${selectedSeat.row}-${selectedSeat.seat}`;
+
+            const sectionData = sections.find(s => s.id === selectedSeat.section);
+            const ticketPrice = sectionData.price;
+            const serviceFee = Math.round(ticketPrice * 0.1);
+
+            document.getElementById('priceTicket').textContent = ticketPrice.toLocaleString() + ' ₽';
+            document.getElementById('priceService').textContent = serviceFee.toLocaleString() + ' ₽';
+
+            let total = ticketPrice + serviceFee;
+            if (promoApplied) {
+                const discount = Math.round(total * 0.15);
+                total -= discount;
+                document.getElementById('priceDiscount').textContent = '-' + discount.toLocaleString() + ' ₽';
+                document.getElementById('discountRow').style.display = 'flex';
+            }
+
+            document.getElementById('priceTotal').textContent = total.toLocaleString() + ' ₽';
+            updateBottomBar();
+        }
+
+        // Apply promo
+        function applyPromo() {
+            const code = document.getElementById('promoInput').value.trim().toUpperCase();
+            if (code === 'ФУТБОЛ2026' || code === 'FUSSBALL2026') {
+                promoApplied = true;
+                showPurchase();
+                showToast('Промокод применён! -15% 🎉');
+            }
+        }
+
+        // Complete purchase
+        function completePurchase() {
+            const name = document.getElementById('nameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+
+            if (!name || !email) {
+                showToast('Заполните имя и email');
+                return;
+            }
+
+            showScreen('success');
+            document.getElementById('orderNumber').textContent = Math.floor(Math.random() * 900000 + 100000);
+            document.getElementById('bottomBar').style.display = 'none';
+            document.getElementById('header').style.display = 'none';
+
+            // Haptic feedback
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
+        // Screen navigation
+        function showScreen(screen) {
+            currentScreen = screen;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${screen}`).classList.add('active');
+
+            // Update header
+            const titles = {
+                matches: '⚽ ФутболБилеты',
+                stadium: '🏟️ Выбор места',
+                preview: '👁️ Вид с места',
+                purchase: '🎫 Оформление',
+                success: ''
+            };
+            document.getElementById('headerTitle').textContent = titles[screen];
+            document.getElementById('backBtn').style.display = screen === 'matches' || screen === 'success' ? 'none' : 'flex';
+        }
+
+        function goBack() {
+            const flow = ['matches', 'stadium', 'preview', 'purchase'];
+            const idx = flow.indexOf(currentScreen);
+            if (idx > 0) {
+                showScreen(flow[idx - 1]);
+                if (flow[idx - 1] === 'stadium' && selectedSection) {
+                    renderSeats(selectedSection);
+                }
+                updateBottomBar();
+            }
+        }
+
+        function goHome() {
+            selectedMatch = null;
+            selectedSection = null;
+            selectedSeat = null;
+            promoApplied = false;
+            document.getElementById('bottomBar').style.display = 'flex';
+            document.getElementById('header').style.display = 'flex';
+            showScreen('matches');
+            renderMatches();
+            updateBottomBar();
+        }
+
+        function nextScreen() {
+            if (currentScreen === 'stadium' && selectedSeat) {
+                showPreview();
+            } else if (currentScreen === 'preview') {
+                showPurchase();
+            } else if (currentScreen === 'purchase') {
+                completePurchase();
+            }
+            updateBottomBar();
+        }
+
+        // Update bottom bar
+        function updateBottomBar() {
+            const btn = document.getElementById('bottomBtn');
+            const price = document.getElementById('bottomPrice');
+            const label = document.getElementById('bottomLabel');
+
+            switch (currentScreen) {
+                case 'matches':
+                    document.getElementById('bottomBar').style.display = 'none';
+                    break;
+                case 'stadium':
+                    document.getElementById('bottomBar').style.display = 'flex';
+                    if (selectedSeat) {
+                        btn.disabled = false;
+                        btn.textContent = 'Посмотреть вид →';
+                        const sec = sections.find(s => s.id === selectedSeat.section);
+                        price.textContent = sec.price.toLocaleString() + ' ₽';
+                        label.textContent = `${selectedSeat.section}-${selectedSeat.row}-${selectedSeat.seat}`;
+                    } else if (selectedSection) {
+                        btn.disabled = true;
+                        btn.textContent = 'Выберите место';
+                        price.textContent = selectedSection.price.toLocaleString() + ' ₽';
+                        label.textContent = selectedSection.name;
+                    } else {
+                        btn.disabled = true;
+                        btn.textContent = 'Выберите сектор';
+                        price.textContent = 'от ' + selectedMatch.priceFrom.toLocaleString() + ' ₽';
+                        label.textContent = selectedMatch.stadium;
+                    }
+                    break;
+                case 'preview':
+                    btn.disabled = false;
+                    btn.textContent = 'Купить билет →';
+                    break;
+                case 'purchase':
+                    btn.disabled = false;
+                    btn.textContent = '💳 Оплатить';
+                    const sec2 = sections.find(s => s.id === selectedSeat.section);
+                    const service = Math.round(sec2.price * 0.1);
+                    let total = sec2.price + service;
+                    if (promoApplied) total = Math.round(total * 0.85);
+                    price.textContent = total.toLocaleString() + ' ₽';
+                    label.textContent = 'Итого';
+                    break;
+                case 'success':
+                    document.getElementById('bottomBar').style.display = 'none';
+                    break;
+            }
+        }
+
+        // Filter functions
+        function filterByLeague(league) {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderMatches(league, document.getElementById('searchInput').value);
+        }
+
+        function filterMatches() {
+            const search = document.getElementById('searchInput').value;
+            const activeTab = document.querySelector('.filter-tab.active');
+            const league = activeTab ? (activeTab.textContent === 'Все матчи' ? 'all' :
+                activeTab.textContent === 'РПЛ' ? 'rpl' :
+                activeTab.textContent === 'Кубок России' ? 'cup' : 'friendly') : 'all';
+            renderMatches(league, search);
+        }
+
+        // Preview actions
+        function rotateView() {
+            const img = document.getElementById('previewImage');
+            img.style.transform = 'scale(1.1) rotate(2deg)';
+            setTimeout(() => img.style.transform = '', 500);
+            showToast('Панорамный вид 360°');
+        }
+
+        function toggleAR() {
+            showToast('AR режим скоро будет доступен! 📱');
+        }
+
+        function shareView() {
+            if (tg.switchInlineQuery) {
+                tg.switchInlineQuery(`Смотри какой вид с моего места на ${selectedMatch.homeTeam} - ${selectedMatch.awayTeam}!`);
+            }
+            showToast('Ссылка скопирована!');
+        }
+
+        // Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // Init
+        renderMatches();
+        updateBottomBar();
+    </script>
+</body>
+</html>
